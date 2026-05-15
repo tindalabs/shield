@@ -28,6 +28,11 @@ function detectHeadless(): boolean {
 // ── DevTools detection ────────────────────────────────────────────────────────
 
 function detectDevTools(timeoutMs: number): Promise<boolean> {
+  // DebuggerDetector defers worker init by 100ms via setTimeout; calling
+  // checkDevTools() before that returns immediately (worker null). We wait
+  // 150ms so the worker is ready before triggering the actual check.
+  const WARMUP_MS = 150;
+
   return new Promise((resolve) => {
     let settled = false;
 
@@ -40,22 +45,17 @@ function detectDevTools(timeoutMs: number): Promise<boolean> {
 
     const manager = new DevToolsDetectorManager({
       delayInitialCheck: false,
-      onDevToolsChange: (isOpen) => settle(isOpen),
+      // Only settle true on open — the timeout below handles the closed case.
+      onDevToolsChange: (isOpen) => { if (isOpen) settle(true); },
     });
 
-    // Trigger an immediate synchronous check — some detectors resolve at once
-    manager.checkDevTools();
-
-    // If the synchronous check didn't fire the callback, read the current state
-    // (the manager accumulates state across its active detectors)
-    if (!settled && manager.isOpen()) {
-      settle(true);
-      return;
-    }
-
-    // Async detectors (e.g., debugger timing) resolve via callback; give them
-    // up to timeoutMs then fall back to false.
-    setTimeout(() => settle(false), timeoutMs);
+    setTimeout(() => {
+      if (settled) return;
+      manager.checkDevTools();
+      // If DevTools are open, the debugger timeout (50ms) fires the callback.
+      // If still no result after the remaining budget, DevTools are closed.
+      setTimeout(() => settle(false), timeoutMs - WARMUP_MS);
+    }, WARMUP_MS);
   });
 }
 
@@ -135,19 +135,19 @@ const DEFAULT_EXTENSION_CONFIG: ExtensionConfig[] = [
   {
     name: 'React DevTools',
     description: 'React component inspector',
-    riskLevel: 'low',
+    risk: 'low',
     detectionMethods: { jsSignatures: ['__REACT_DEVTOOLS_GLOBAL_HOOK__'] },
   },
   {
     name: 'Redux DevTools',
     description: 'Redux state inspector',
-    riskLevel: 'low',
+    risk: 'low',
     detectionMethods: { jsSignatures: ['__REDUX_DEVTOOLS_EXTENSION__'] },
   },
   {
     name: 'Tampermonkey',
     description: 'Userscript manager',
-    riskLevel: 'medium',
+    risk: 'medium',
     detectionMethods: {
       jsSignatures: ['GM_info', 'unsafeWindow'],
       domSelectors: ['[class*="tampermonkey"]'],
@@ -156,7 +156,7 @@ const DEFAULT_EXTENSION_CONFIG: ExtensionConfig[] = [
   {
     name: 'Greasemonkey',
     description: 'Userscript manager',
-    riskLevel: 'medium',
+    risk: 'medium',
     detectionMethods: { jsSignatures: ['GM', 'greasemonkey'] },
   },
 ];
