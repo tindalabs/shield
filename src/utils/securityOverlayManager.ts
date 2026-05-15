@@ -662,7 +662,7 @@ export class SecurityOverlayManager implements MediatorAware {
     // Apply styles to the overlay
     Object.entries(styles).forEach(([key, value]) => {
       if (value !== undefined) {
-        overlay.style[key] = value
+        (overlay.style as unknown as Record<string, string>)[key] = value
       }
     })
 

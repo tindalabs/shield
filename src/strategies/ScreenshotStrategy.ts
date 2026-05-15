@@ -254,11 +254,12 @@ export class ScreenshotStrategy extends AbstractStrategy {
       if (!this.options.preventFullscreen) return
 
       // Check if we're in fullscreen mode
+      const doc = document as any; // eslint-disable-line @typescript-eslint/no-explicit-any
       const isInFullscreen =
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement ||
-        document.msFullscreenElement
+        doc.fullscreenElement ||
+        doc.webkitFullscreenElement ||
+        doc.mozFullScreenElement ||
+        doc.msFullscreenElement
 
       if (isInFullscreen) {
         this.log("Fullscreen mode detected, exiting fullscreen")
@@ -287,11 +288,12 @@ export class ScreenshotStrategy extends AbstractStrategy {
       // Check if document is active and has a fullscreen element before attempting to exit
       try {
         // Only attempt to exit if we're actually in fullscreen mode
+        const doc = document as any; // eslint-disable-line @typescript-eslint/no-explicit-any
         const isInFullscreen =
-          document.fullscreenElement ||
-          document.webkitFullscreenElement ||
-          document.mozFullScreenElement ||
-          document.msFullscreenElement
+          doc.fullscreenElement ||
+          doc.webkitFullscreenElement ||
+          doc.mozFullScreenElement ||
+          doc.msFullscreenElement
 
         if (isInFullscreen) {
           if (document.exitFullscreen) {
@@ -299,12 +301,12 @@ export class ScreenshotStrategy extends AbstractStrategy {
               // Silently catch errors during exit fullscreen
               this.log("Error exiting fullscreen:", err.message)
             })
-          } else if (document.webkitExitFullscreen) {
-            document.webkitExitFullscreen()
-          } else if (document.mozCancelFullScreen) {
-            document.mozCancelFullScreen()
-          } else if (document.msExitFullscreen) {
-            document.msExitFullscreen()
+          } else if (doc.webkitExitFullscreen) {
+            doc.webkitExitFullscreen()
+          } else if (doc.mozCancelFullScreen) {
+            doc.mozCancelFullScreen()
+          } else if (doc.msExitFullscreen) {
+            doc.msExitFullscreen()
           }
 
           this.log("Exited fullscreen mode")
