@@ -53,7 +53,7 @@ Object.entries(shield.spanAttributes).forEach(([k, v]) => setAttribute(k, v));
 
 ### With Scent
 
-Shield's risk flags compose with Scent's risk engine:
+Shield's signals compose directly with Scent's identity and risk engine:
 
 ```ts
 import { assess } from '@tindalabs/shield';
@@ -62,13 +62,11 @@ import { init as initScent } from '@tindalabs/scent-sdk';
 const scent = initScent({ apiKey: '...', endpoint: '...' });
 const shield = await assess();
 
-const obs = await scent.observe({
-  extraSignals: {
-    'shield.webdriver': shield.signals['shield.automation.webdriver'],
-    'shield.headless': shield.signals['shield.automation.headless'],
-    'shield.devtools': shield.signals['shield.devtools.open'],
-  },
-});
+// shield.signals merges into the snapshot alongside browser fingerprint signals
+const obs = await scent.observe({ extraSignals: shield.signals });
+await scent.flush();
+// The server risk engine now sees webdriver/headless/devtools signals
+// alongside canvas, fonts, hardware and all other collected signals.
 ```
 
 ---
