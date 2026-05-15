@@ -1,0 +1,59 @@
+{
+  "name": "@tindalabs/shield",
+  "version": "0.1.0",
+  "main": "dist/index.js",
+  "type": "module",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "lint": "eslint 'src/**/*.ts'",
+    "format": "prettier --write 'src/**/*.ts'",
+    "prepublishOnly": "npm run lint && npm run test && npm run build",
+    "prepare": "npm run build",
+    "examples:install": "cd examples && npm install",
+    "examples:build": "npm run build && npm run examples:install",
+    "examples:start": "cd examples && npm run start"
+  },
+  "keywords": [
+    "browser-security",
+    "tamper-detection",
+    "devtools-detection",
+    "automation-detection",
+    "webdriver",
+    "headless",
+    "content-protection",
+    "fingerprinting",
+    "opentelemetry",
+    "typescript",
+    "frontend-security"
+  ],
+  "author": "Isonimus",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tindalabs/shield.git"
+  },
+  "description": "Browser tamper detection for hostile environments. Detects DevTools, automation drivers, extension injection, and environment spoofing — surfaces findings as structured risk signals, not just boolean flags.",
+  "devDependencies": {
+    "@eslint/js": "^9.22.0",
+    "@types/jest": "^29.5.14",
+    "@types/node": "^22.13.10",
+    "eslint": "^9.22.0",
+    "eslint-config-prettier": "^10.1.1",
+    "jest": "^29.7.0",
+    "prettier": "^3.5.3",
+    "ts-jest": "^29.2.6",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.27.0"
+  },
+  "dependencies": {
+    "jest-environment-jsdom": "^29.7.0"
+  }
+}

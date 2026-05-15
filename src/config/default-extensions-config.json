@@ -1,0 +1,103 @@
+{
+  "extensions": {
+    "evernote-web-clipper": {
+      "name": "Evernote Web Clipper",
+      "description": "Clips web content to Evernote",
+      "risk": "high",
+      "detectionMethods": {
+        "domSelectors": [".evernote-clipper", "#evernoteClipper", "#evernoteClipperToolsMain"],
+        "jsSignatures": ["EvernoteClipper", "ENClipper"]
+      }
+    },
+    "onenote-clipper": {
+      "name": "OneNote Web Clipper",
+      "description": "Clips web content to OneNote",
+      "risk": "high",
+      "detectionMethods": {
+        "domSelectors": [".onenote-clipper", "#oneNoteClipper", "#oneNoteWebClipper"],
+        "jsSignatures": ["OneNoteClipper", "OneNoteWebClipper"]
+      }
+    },
+    "notion-web-clipper": {
+      "name": "Notion Web Clipper",
+      "description": "Clips web content to Notion",
+      "risk": "high",
+      "detectionMethods": {
+        "domSelectors": [".notion-clipper", "#notionClipper"],
+        "jsSignatures": ["notionClientAPI"]
+      }
+    },
+    "pocket": {
+      "name": "Pocket",
+      "description": "Saves content for later reading",
+      "risk": "medium",
+      "detectionMethods": {
+        "domSelectors": [".pocket-button", "#pocket-button-container"],
+        "jsSignatures": ["Pocket", "PocketButtonManager"]
+      }
+    },
+    "instapaper": {
+      "name": "Instapaper",
+      "description": "Saves content for later reading",
+      "risk": "medium",
+      "detectionMethods": {
+        "domSelectors": [".instapaper-button", "#instapaper-button"],
+        "jsSignatures": ["Instapaper"]
+      }
+    },
+    "readwise": {
+      "name": "Readwise",
+      "description": "Saves highlights and annotations",
+      "risk": "medium",
+      "detectionMethods": {
+        "domSelectors": [".readwise-button", "#readwise-highlights"],
+        "jsSignatures": ["readwiseAPI", "readwiseHighlighter"]
+      }
+    },
+    "singlefile": {
+      "name": "SingleFile",
+      "description": "Saves complete web pages",
+      "risk": "high",
+      "detectionMethods": {
+        "domSelectors": [".singlefile-button", "#singlefile-ui"],
+        "jsSignatures": ["singlefile", "SingleFile"]
+      }
+    },
+    "save-page-we": {
+      "name": "Save Page WE",
+      "description": "Saves complete web pages",
+      "risk": "high",
+      "detectionMethods": {
+        "domSelectors": [".save-page-we"],
+        "jsSignatures": ["savePageWE"]
+      }
+    },
+    "fireshot": {
+      "name": "Fireshot",
+      "description": "Takes screenshots of web pages",
+      "risk": "high",
+      "detectionMethods": {
+        "domSelectors": [".fireshot-ui", "#fireshot-container"],
+        "jsSignatures": ["FireShot", "FSCapture"]
+      }
+    },
+    "gofullpage": {
+      "name": "GoFullPage",
+      "description": "Takes full page screenshots",
+      "risk": "high",
+      "detectionMethods": {
+        "domSelectors": [".gofullpage-ui"],
+        "jsSignatures": ["GoFullPage", "FullPageScreenshot"]
+      }
+    },
+    "web-scraper": {
+      "name": "Web Scraper",
+      "description": "Extracts data from web pages",
+      "risk": "high",
+      "detectionMethods": {
+        "domSelectors": [".web-scraper-selection", "#web-scraper-selector-overlay"],
+        "jsSignatures": ["WebScraper", "SelectorGraph"]
+      }
+    }
+  }
+}
