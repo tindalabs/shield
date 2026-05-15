@@ -138,6 +138,21 @@ See [REFERENCE.md](./REFERENCE.md) for the full `ContentProtector` API and all s
 
 ---
 
+## Demo
+
+A local demo app is included at [`demo/`](./demo). It exercises both APIs in a dark-themed single-page app:
+
+- **Environment Assessment** — runs `assess()` and displays each signal, the risk score bar, and the raw OTel span attributes ready to copy.
+- **Active Content Protection** — full `ContentProtector` controls: every strategy toggle, watermark options, live events log.
+
+```bash
+cd demo
+npm install
+npm run dev   # http://localhost:5175 (or next available port)
+```
+
+---
+
 ## The Tindalabs stack
 
 Shield is one of three composable browser-layer packages:
