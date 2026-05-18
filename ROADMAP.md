@@ -2,7 +2,7 @@
 
 ## Current Status
 
-The Shield is a comprehensive library for protecting web content from copying, screenshotting, and other extraction methods.
+Shield covers the full environment and tamper-detection surface: DevTools detection, WebDriver/Playwright/CDP automation flags, headless browser heuristics, patched-API detection, canvas entropy spoofing, extension detection, and active content protection (selection blocking, print prevention, screenshot prevention, watermarking). A cross-suite gap analysis found no new detection categories needed at this time — the pending items below are the right next work.
 
 ---
 
