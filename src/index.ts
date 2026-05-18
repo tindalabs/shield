@@ -6,4 +6,4 @@ export * from './types/index.js';
 export * from './strategies/index.js';
 export * from './utils/index.js';
 export { attachShieldToSpan } from './otel.js';
-export type { SpanLike, SpanProvider } from './otel.js';
+export type { SpanEmitter } from './otel.js';

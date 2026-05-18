@@ -2,39 +2,41 @@ import { ContentProtector } from '@/core/index.js';
 import type { ContentProtectionOptions, CustomEventHandlers } from '@/types/index.js';
 
 /**
- * Minimal span interface — matches @opentelemetry/api Span without requiring
- * it as a dependency. Pass any object with addEvent() — including real OTel spans
- * or a Blindspot route span from getRouteSpan().
+ * A function that records one Shield security event as an immediately-ending
+ * span (or any other sink). Keeping it framework-agnostic — Shield does not
+ * depend on @opentelemetry/api; callers provide the emitter.
+ *
+ * @example with Blindspot:
+ *   import { getTracer, getRouteContext } from '@tindalabs/blindspot';
+ *   const emitter: SpanEmitter = (name, attrs) => {
+ *     const span = getTracer().startSpan(name, { attributes: attrs }, getRouteContext());
+ *     span.end();
+ *   };
  */
-export interface SpanLike {
-  addEvent(name: string, attributes?: Record<string, string | number | boolean>): void;
-}
-
-export type SpanProvider = () => SpanLike | null | undefined;
+export type SpanEmitter = (
+  name: string,
+  attrs?: Record<string, string | number | boolean>,
+) => void;
 
 function emit(
-  provider: SpanProvider,
+  emitter: SpanEmitter,
   name: string,
   attrs?: Record<string, string | number | boolean>,
 ): void {
-  try { provider()?.addEvent(name, attrs); } catch { /* never let telemetry crash the app */ }
+  try { emitter(name, attrs); } catch { /* never let telemetry crash the app */ }
 }
 
 /**
- * Creates a ContentProtector with all callbacks wired to OTel span events.
+ * Creates a ContentProtector with all callbacks wired to the provided SpanEmitter.
+ * Each security event fires a call to emitter(), which should create and immediately
+ * end a child span — so events are exported to Tempo without waiting for the
+ * long-lived navigation span to close.
  *
- * Pass any existing customHandlers in options — they run after the span event
- * is recorded, so UI state updates and span recording both happen.
- *
- * @example
- * // With Blindspot:
- * import { getRouteSpan } from '@tindalabs/blindspot';
- * const protector = attachShieldToSpan(options, () => getRouteSpan());
- * protector.protect();
+ * Any existing customHandlers in options are preserved and called after the emit.
  */
 export function attachShieldToSpan(
   options: ContentProtectionOptions,
-  spanProvider: SpanProvider,
+  emitter: SpanEmitter,
 ): ContentProtector {
   const existing: CustomEventHandlers = options.customHandlers ?? {};
 
@@ -42,27 +44,27 @@ export function attachShieldToSpan(
     ...existing,
 
     onDevToolsOpen(isOpen) {
-      emit(spanProvider, isOpen ? 'shield.devtools.opened' : 'shield.devtools.closed');
+      emit(emitter, isOpen ? 'shield.devtools.opened' : 'shield.devtools.closed');
       existing.onDevToolsOpen?.(isOpen);
     },
 
     onSelectionAttempt(event) {
-      emit(spanProvider, 'shield.selection.attempted');
+      emit(emitter, 'shield.selection.attempted');
       existing.onSelectionAttempt?.(event);
     },
 
     onContextMenuAttempt(event) {
-      emit(spanProvider, 'shield.context_menu.attempted');
+      emit(emitter, 'shield.context_menu.attempted');
       existing.onContextMenuAttempt?.(event);
     },
 
     onPrintAttempt(event) {
-      emit(spanProvider, 'shield.print.attempted');
+      emit(emitter, 'shield.print.attempted');
       existing.onPrintAttempt?.(event);
     },
 
     onKeyboardShortcutBlocked(event) {
-      emit(spanProvider, 'shield.keyboard_shortcut.blocked', {
+      emit(emitter, 'shield.keyboard_shortcut.blocked', {
         'shield.keyboard.key': event.key,
         'shield.keyboard.code': event.code,
       });
@@ -70,17 +72,17 @@ export function attachShieldToSpan(
     },
 
     onClipboardAttempt(event, action) {
-      emit(spanProvider, `shield.clipboard.${action}`);
+      emit(emitter, `shield.clipboard.${action}`);
       existing.onClipboardAttempt?.(event, action);
     },
 
     onScreenshotAttempt(event) {
-      emit(spanProvider, 'shield.screenshot.attempted');
+      emit(emitter, 'shield.screenshot.attempted');
       existing.onScreenshotAttempt?.(event);
     },
 
     onExtensionDetected(id, name, risk) {
-      emit(spanProvider, 'shield.extension.detected', {
+      emit(emitter, 'shield.extension.detected', {
         'shield.extension.id': id,
         'shield.extension.name': name,
         'shield.extension.risk': risk,
@@ -90,7 +92,7 @@ export function attachShieldToSpan(
 
     onFrameEmbeddingDetected(isEmbedded, isExternal) {
       if (isEmbedded) {
-        emit(spanProvider, 'shield.frame.embedding.detected', {
+        emit(emitter, 'shield.frame.embedding.detected', {
           'shield.frame.external': isExternal,
         });
       }
@@ -98,19 +100,19 @@ export function attachShieldToSpan(
     },
 
     onProtectionBypassed(method, event) {
-      emit(spanProvider, 'shield.protection.bypassed', {
+      emit(emitter, 'shield.protection.bypassed', {
         'shield.bypass.method': method,
       });
       existing.onProtectionBypassed?.(method, event);
     },
 
     onContentHidden(reason, target) {
-      emit(spanProvider, 'shield.content.hidden', { 'shield.hidden.reason': reason });
+      emit(emitter, 'shield.content.hidden', { 'shield.hidden.reason': reason });
       existing.onContentHidden?.(reason, target);
     },
 
     onContentRestored(target) {
-      emit(spanProvider, 'shield.content.restored');
+      emit(emitter, 'shield.content.restored');
       existing.onContentRestored?.(target);
     },
   };
