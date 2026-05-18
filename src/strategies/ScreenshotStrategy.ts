@@ -184,6 +184,10 @@ export class ScreenshotStrategy extends AbstractStrategy {
         if (this.mediator) {
           this.showScreenshotNotification()
         }
+
+        if (this.customHandler) {
+          this.customHandler(new Event("blur"))
+        }
       }
     })
   }
@@ -213,6 +217,10 @@ export class ScreenshotStrategy extends AbstractStrategy {
           if (this.mediator) {
             this.showScreenshotNotification()
           }
+
+          if (this.customHandler) {
+            this.customHandler(new Event("visibilitychange"))
+          }
         }
       }
     })
@@ -229,6 +237,10 @@ export class ScreenshotStrategy extends AbstractStrategy {
       if (this.mediator) {
         this.showScreenshotNotification()
       }
+
+      if (this.customHandler) {
+        this.customHandler(new Event("afterprint"))
+      }
     })
   }
 
@@ -242,6 +254,10 @@ export class ScreenshotStrategy extends AbstractStrategy {
       // Publish screenshot attempt event
       if (this.mediator) {
         this.showScreenshotNotification()
+      }
+
+      if (this.customHandler) {
+        this.customHandler(new Event("beforeprint"))
       }
     })
   }
