@@ -10,6 +10,7 @@ import {
   BrowserExtensionDetectionStrategy,
   FrameEmbeddingProtectionStrategy,
 } from "../strategies"
+import { ClipboardStrategy } from "../strategies/ClipboardStrategy"
 import { SecurityOverlayManager } from "../utils/securityOverlayManager"
 import { intervalManager } from "../utils/intervalManager"
 import { eventManager } from "../utils/eventManager"
@@ -48,6 +49,7 @@ export class ContentProtector {
       preventDevTools: false,
       preventExtensions: false,
       preventEmbedding: false,
+      preventClipboard: false,
       debugMode: false,
     }
 
@@ -221,6 +223,13 @@ export class ContentProtector {
       )
       frameStrategy.setMediator(this.mediator)
       this.strategies.set("iFrame", frameStrategy)
+    }
+
+    if (this.options.preventClipboard) {
+      this.strategies.set(
+        "clipboard",
+        new ClipboardStrategy(this.options.clipboardOptions, targetElement, customHandlers?.onClipboardAttempt, debugMode),
+      )
     }
 
     this.logger.log("Initialized strategies", Array.from(this.strategies.keys()))

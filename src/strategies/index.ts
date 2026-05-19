@@ -7,4 +7,5 @@ export * from './SelectionStrategy';
 export * from './DevToolsStrategy';
 export * from './ScreenshotStrategy';
 export * from './ExtensionStrategy';
-export * from './IFrameStrategy'
+export * from './IFrameStrategy';
+export * from './ClipboardStrategy';

@@ -1,11 +1,37 @@
-import { describe, it, expect, jest } from '@jest/globals'
+import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals'
 import { FrameEmbeddingProtectionStrategy } from '../../strategies/IFrameStrategy'
 import { ProtectionEventType } from '../../core/mediator/protection-event'
 import type { FrameEmbeddingOptions } from '../../types'
 import type { ProtectionMediator } from '../../core/mediator/types'
 import type { FrameEmbeddingEvent } from '../../core/mediator/protection-event'
 
+// The intervalManager is a module-level singleton. Without mocking it, its
+// 500ms base interval fires between tests and causes cross-test contamination.
+jest.mock('../../utils/intervalManager', () => ({
+  intervalManager: {
+    registerTask: jest.fn().mockReturnValue('iframe-task-id'),
+    unregisterTask: jest.fn(),
+    dispose: jest.fn(),
+    setDebugMode: jest.fn(),
+  },
+}))
+
 describe('FrameEmbeddingProtectionStrategy', () => {
+  beforeEach(() => {
+    // Reset window to a same-origin, non-framed state before each test.
+    // Use getter form — value-based defineProperty for window.parent does not
+    // reliably restore after jsdom converts it to a plain value descriptor.
+    jest.useFakeTimers()
+    Object.defineProperty(window, 'top', { get: () => window, configurable: true })
+    Object.defineProperty(window, 'parent', { get: () => window, configurable: true })
+    Object.defineProperty(window, 'self', { get: () => window, configurable: true })
+  })
+
+  afterEach(() => {
+    jest.useRealTimers()
+    jest.clearAllMocks()
+  })
+
   it('publishes event when embedded in external iframe', () => {
     const mediator: ProtectionMediator = {
       publish: jest.fn(),
@@ -15,16 +41,12 @@ describe('FrameEmbeddingProtectionStrategy', () => {
       setDebugMode: jest.fn(),
     }
 
-    // Simulate being inside an external iframe
     type FakeWindowLike = { location: { hostname: string } }
     const fakeParent: FakeWindowLike = { location: { hostname: 'evil.com' } }
     const fakeTop: FakeWindowLike = { location: { hostname: 'evil.com' } }
 
-    // Override window.top and window.parent
     Object.defineProperty(window, 'top', { value: fakeTop as unknown as Window, configurable: true })
     Object.defineProperty(window, 'parent', { value: fakeParent as unknown as Window, configurable: true })
-
-    // Ensure current location is different
     Object.defineProperty(window, 'location', { value: { hostname: 'example.com' }, configurable: true })
 
     const strategy = new FrameEmbeddingProtectionStrategy({ showOverlay: true, allowedDomains: [] } as FrameEmbeddingOptions, document.body, undefined, false)
@@ -39,11 +61,6 @@ describe('FrameEmbeddingProtectionStrategy', () => {
     expect(published.data.parentDomain).toBe('evil.com')
 
     strategy.remove()
-
-    // Restore defaults - jsdom may allow reassignment, but be safe
-    Object.defineProperty(window, 'top', { value: window, configurable: true })
-    Object.defineProperty(window, 'parent', { value: window, configurable: true })
-    Object.defineProperty(window, 'location', { value: window.location, configurable: true })
   })
 
   it('does not publish when parent domain is allowed', () => {
@@ -66,13 +83,8 @@ describe('FrameEmbeddingProtectionStrategy', () => {
 
     strategy.apply()
 
-    // Should not have published since parent is allowed
     expect(mediator.publish).not.toHaveBeenCalled()
 
     strategy.remove()
-
-    Object.defineProperty(window, 'top', { value: window, configurable: true })
-    Object.defineProperty(window, 'parent', { value: window, configurable: true })
-    Object.defineProperty(window, 'location', { value: window.location, configurable: true })
   })
 })

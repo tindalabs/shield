@@ -49,6 +49,14 @@ export interface ContentProtectionOptions {
   /** iFrame protection options */
   frameEmbeddingOptions?: FrameEmbeddingOptions;
 
+  /** Enable/disable clipboard protection (copy/cut/paste events + Clipboard API)
+   * @default false
+   */
+  preventClipboard?: boolean;
+
+  /** Clipboard protection options */
+  clipboardOptions?: ClipboardOptions;
+
   /** Target element (defaults to document.body) */
   targetElement?: HTMLElement | null;
 
