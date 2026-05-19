@@ -200,7 +200,7 @@ export interface BrowserExtensionOptions {
    * Whether to show overlay when triggered
    * @default true
    */
-  showOverlay: true,
+  showOverlay?: boolean;
   // Custom overlay options when blocking content
   overlayOptions?: OverlayOptions
   /**
@@ -233,7 +233,7 @@ export interface FrameEmbeddingOptions {
    * Whether to show overlay when triggered
    * @default true
    */
-  showOverlay: true,
+  showOverlay?: boolean;
   // Custom overlay options when blocking content
   overlayOptions?: OverlayOptions;
   /**
