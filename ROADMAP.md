@@ -85,6 +85,66 @@ Three abstract classes duplicate logging/error-handling functionality:
 
 ---
 
+### 5. Risk-Gated Adaptive Protection (`assessAndProtect`)
+
+**Priority**: High | **Effort**: 3-5 hours | **Status**: To do
+
+`assess()` and `ContentProtector` are currently independent APIs — users must manually read the assessment result and activate strategies. A declarative policy bridge closes this gap: run `assess()` once, then activate only the strategies that are warranted by the detected signals. Legitimate users see no protection overhead; automation and scrapers trigger it automatically.
+
+**Proposed API:**
+
+```typescript
+import { assessAndProtect } from '@tindalabs/shield';
+
+const protector = await assessAndProtect(element, {
+  policies: [
+    // Watermark all medium-risk sessions (headless, automation)
+    {
+      when: { riskScore: { gte: 0.3 } },
+      enable: ['enableWatermark'],
+      watermarkOptions: { text: (assessment) => `PROTECTED-${assessment.sessionId}` },
+    },
+    // Add clipboard + selection protection for high-risk sessions
+    {
+      when: { riskScore: { gte: 0.6 } },
+      enable: ['preventSelection', 'preventClipboard'],
+    },
+    // Screenshot prevention specifically for headless automation
+    {
+      when: { signals: { 'shield.automation.headless': true } },
+      enable: ['preventScreenshots'],
+    },
+  ],
+  // OTel span emitter — policy triggers emit span events
+  spanEmitter: (name, attrs) => span.addEvent(name, attrs),
+});
+```
+
+**Why this matters:**
+
+- **No legitimate user friction** — protection is proportional to detected risk, not always-on
+- **Traceable watermarks** — watermark text can embed the assess() session token, so scraped content carries a forensic trace back to the session that extracted it
+- **OTel-native policy observability** — every policy trigger emits a span event (`shield.policy.triggered`, `shield.strategy.activated`) visible in Grafana; operators can see in real time how often and by what signal their content is being targeted
+- **Composable with Scent** — pair with `scent.observe({ extraSignals: assessment.signals })` for identity-aware policies ("this device has triggered protection 12 times this week")
+
+**Use cases / marketing angles:**
+
+- *Adaptive content protection* — the primary positioning; broader than any single use case
+- *Anti-AI scraping* — headless + automation signals map directly to scraper profiles; watermark embeds a forensic trace into any scraped content
+- *Risk-proportional DRM* — financial, legal, and media documents get protection only when the session warrants it
+
+#### Tasks
+- [ ] Design `PolicyEngine` type: `PolicyRule[]` with `when` (signal conditions + risk threshold) and `enable` (strategy keys)
+- [ ] Implement `assessAndProtect(element, options)` — runs `assess()`, evaluates policies in order, initialises `ContentProtector` with the union of matched strategies
+- [ ] Support dynamic watermark text via `watermarkOptions.text: string | ((assessment: ShieldAssessment) => string)`
+- [ ] Emit OTel span events for each triggered policy rule (name: `shield.policy.triggered`, attrs: matched signals + enabled strategies)
+- [ ] Export `assessAndProtect` and `PolicyRule` from `src/index.ts`
+- [ ] Add unit tests: no-match policy (no protector created), single-match, multi-match, watermark text factory, OTel emit
+- [ ] Add example to README and `REFERENCE.md` under "Adaptive Protection"
+- [ ] Add use-case section to README: "Anti-AI scraping / adaptive content protection"
+
+---
+
 ## Advisory Backlog — 2026-05-19
 
 Findings from a full C-level assessment (CTO / CPO / COO / CMO / CFO + competitive research).
