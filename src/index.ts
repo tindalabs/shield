@@ -7,3 +7,6 @@ export * from './strategies/index.js';
 export * from './utils/index.js';
 export { attachShieldToSpan } from './otel.js';
 export type { SpanEmitter } from './otel.js';
+
+export { assessAndProtect } from './policy.js';
+export type { PolicyRule, PolicyCondition, PolicyEngineOptions, PolicyResult, StrategyKey } from './policy.js';

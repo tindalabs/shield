@@ -14,6 +14,8 @@ export default {
   },
   moduleNameMapper: {
     '^(\\.{1,2}/.*)\\.js$': '$1', // Handle ESM imports without extension
+    '^@/(.*)\\.js$': '<rootDir>/src/$1', // Resolve @/ path alias (with .js extension)
+    '^@/(.*)$': '<rootDir>/src/$1',      // Resolve @/ path alias (without extension)
   },
   extensionsToTreatAsEsm: ['.ts'],
   collectCoverage: true,
