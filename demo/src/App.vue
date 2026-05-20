@@ -53,6 +53,61 @@
       </div>
     </section>
 
+    <!-- ── assessAndProtect() policy engine ────────────────────────── -->
+    <section class="card">
+      <div class="card-title">Risk-Gated Policy Engine — assessAndProtect()</div>
+      <p class="card-desc">
+        Runs <code>assess()</code> then activates exactly the strategies each session
+        warrants. Zero overhead for clean sessions; full defence for automation and
+        high-risk visitors.
+      </p>
+
+      <!-- Policy rules preview -->
+      <div class="policy-list">
+        <div v-for="(rule, i) in displayPolicies" :key="i" class="policy-row"
+             :class="{ 'policy-matched': policyResult && matchedRuleIndexes.has(i) }">
+          <span class="policy-cond">{{ rule.condLabel }}</span>
+          <span class="policy-arrow">→</span>
+          <div class="policy-tags">
+            <span v-for="s in rule.enable" :key="s" class="policy-tag">{{ s }}</span>
+          </div>
+          <span v-if="policyResult && matchedRuleIndexes.has(i)" class="policy-matched-badge">matched</span>
+        </div>
+      </div>
+
+      <div class="actions" style="margin-top:1rem">
+        <button class="btn-primary" :disabled="policyRunning" @click="runPolicyEngine">
+          {{ policyRunning ? 'Assessing…' : 'Run assessAndProtect()' }}
+        </button>
+        <button v-if="policyResult" class="btn-secondary" @click="resetPolicy">Reset</button>
+      </div>
+
+      <div v-if="policyResult" class="policy-result">
+        <div class="policy-result-row">
+          <span>Risk score</span>
+          <span class="risk-score" :class="policyRiskClass">
+            {{ (policyResult.assessment.risk.score * 100).toFixed(0) }}%
+          </span>
+        </div>
+        <div class="policy-result-row">
+          <span>Matched rules</span>
+          <span style="color:#e2e8f0">{{ matchedRuleIndexes.size }} / {{ displayPolicies.length }}</span>
+        </div>
+        <div class="policy-result-row">
+          <span>Protection</span>
+          <span class="badge" :class="policyResult.protector ? 'badge-threat' : 'badge-safe'">
+            {{ policyResult.protector ? 'Active' : 'Not activated' }}
+          </span>
+        </div>
+        <div v-if="policyActiveStrategies.length" class="policy-result-row">
+          <span>Strategies</span>
+          <div class="policy-tags">
+            <span v-for="s in policyActiveStrategies" :key="s" class="policy-tag policy-tag-active">{{ s }}</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
     <!-- ── ContentProtector controls ────────────────────────────────── -->
     <section class="card">
       <div class="card-title">Active Content Protection</div>
@@ -154,8 +209,8 @@
 
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
-import { assess, ContentProtector } from '@tindalabs/shield';
-import type { ShieldAssessment } from '@tindalabs/shield';
+import { assess, ContentProtector, assessAndProtect } from '@tindalabs/shield';
+import type { ShieldAssessment, PolicyResult } from '@tindalabs/shield';
 import shieldImg from './assets/shield.webp';
 
 // ── assess() state ──────────────────────────────────────────────────────────
@@ -192,6 +247,105 @@ const riskClass = computed(() => {
   if (score >= 0.2) return 'risk-medium';
   return 'risk-low';
 });
+
+// ── assessAndProtect() policy engine ───────────────────────────────────────
+
+const POLICIES = [
+  {
+    when: { riskScore: { gte: 0.2 } },
+    enable: ['enableWatermark'] as const,
+    watermarkOptions: (a: ShieldAssessment) => ({ text: `RISK-${Math.round(a.risk.score * 100)}` }),
+    condLabel: 'riskScore ≥ 0.2',
+  },
+  {
+    when: { riskScore: { gte: 0.5 } },
+    enable: ['preventSelection', 'preventClipboard'] as const,
+    condLabel: 'riskScore ≥ 0.5',
+  },
+  {
+    when: { signals: { 'shield.automation.headless': true } },
+    enable: ['preventContextMenu', 'preventKeyboardShortcuts'] as const,
+    condLabel: 'headless = true',
+  },
+];
+
+const displayPolicies = POLICIES;
+
+const policyRunning  = ref(false);
+const policyResult   = ref<PolicyResult | null>(null);
+const matchedRuleIndexes = ref<Set<number>>(new Set());
+const policyActiveStrategies = ref<string[]>([]);
+
+const policyRiskClass = computed(() => {
+  if (!policyResult.value) return '';
+  const s = policyResult.value.assessment.risk.score;
+  if (s >= 0.7) return 'risk-critical';
+  if (s >= 0.4) return 'risk-high';
+  if (s >= 0.2) return 'risk-medium';
+  return 'risk-low';
+});
+
+let policyProtector: InstanceType<typeof ContentProtector> | null = null;
+
+async function runPolicyEngine() {
+  policyRunning.value = true;
+  policyProtector?.dispose();
+  policyProtector = null;
+  matchedRuleIndexes.value = new Set();
+  policyActiveStrategies.value = [];
+  try {
+    // Run with the protected-area element so the watermark appears in the right place
+    const result = await assessAndProtect(protectedContent.value, {
+      policies: POLICIES.map(({ when, enable, watermarkOptions }) =>
+        watermarkOptions
+          ? { when, enable: [...enable], watermarkOptions }
+          : { when, enable: [...enable] }
+      ),
+    });
+    policyResult.value = result;
+    if (result.protector) {
+      policyProtector = result.protector as InstanceType<typeof ContentProtector>;
+    }
+    // Reconstruct which rules matched for highlighting
+    const matched = new Set<number>();
+    const strategies = new Set<string>();
+    const score = result.assessment.risk.score;
+    const signals = result.assessment.signals;
+    POLICIES.forEach((rule, i) => {
+      const { riskScore, signals: sigCond } = rule.when as { riskScore?: { gte?: number; lt?: number }; signals?: Record<string, boolean> };
+      let ok = true;
+      if (riskScore?.gte !== undefined && score < riskScore.gte) ok = false;
+      if (riskScore?.lt  !== undefined && score >= riskScore.lt)  ok = false;
+      if (sigCond) {
+        for (const [k, v] of Object.entries(sigCond)) {
+          if ((signals as Record<string, unknown>)[k] !== v) { ok = false; break; }
+        }
+      }
+      if (ok) {
+        matched.add(i);
+        rule.enable.forEach(s => strategies.add(s));
+      }
+    });
+    matchedRuleIndexes.value = matched;
+    policyActiveStrategies.value = [...strategies];
+    logEvent('Policy', result.protector
+      ? `Protection active — ${strategies.size} strateg${strategies.size === 1 ? 'y' : 'ies'} (score ${(score * 100).toFixed(0)}%)`
+      : `No rules matched — session clean (score ${(score * 100).toFixed(0)}%)`,
+    );
+  } catch (e) {
+    logEvent('Policy', `Error: ${e instanceof Error ? e.message : String(e)}`);
+  } finally {
+    policyRunning.value = false;
+  }
+}
+
+function resetPolicy() {
+  policyProtector?.dispose();
+  policyProtector = null;
+  policyResult.value = null;
+  matchedRuleIndexes.value = new Set();
+  policyActiveStrategies.value = [];
+}
 
 // ── ContentProtector state ──────────────────────────────────────────────────
 const protectedContent = ref<HTMLElement | null>(null);
@@ -505,6 +659,34 @@ button:disabled { opacity: 0.45; cursor: not-allowed; }
   overflow-x: auto;
   border-top: 1px solid #1e2d40;
 }
+
+/* ── Policy engine ── */
+.policy-list { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.75rem; }
+.policy-row {
+  display: flex; align-items: center; gap: 0.6rem; flex-wrap: wrap;
+  background: #1a2235; border: 1px solid #1e2d40; border-radius: 6px;
+  padding: 0.5rem 0.75rem; font-size: 0.82rem;
+  transition: border-color 0.2s, background 0.2s;
+}
+.policy-row.policy-matched { border-color: #6366f1; background: #1a1f3a; }
+.policy-cond  { color: #94a3b8; min-width: 140px; font-family: monospace; font-size: 0.78rem; }
+.policy-arrow { color: #475569; }
+.policy-tags  { display: flex; gap: 0.35rem; flex-wrap: wrap; flex: 1; }
+.policy-tag   { font-size: 0.7rem; padding: 0.15rem 0.45rem; border-radius: 4px; background: #1e2d40; color: #64748b; }
+.policy-tag-active { background: #1e3a4a; color: #7dd3fc; }
+.policy-matched-badge {
+  font-size: 0.68rem; font-weight: 600; padding: 0.15rem 0.45rem;
+  border-radius: 4px; background: #2d1f3a; color: #a78bfa; margin-left: auto;
+}
+.policy-result {
+  margin-top: 1rem; border-top: 1px solid #1e2d40; padding-top: 0.75rem;
+  display: flex; flex-direction: column; gap: 0.45rem;
+}
+.policy-result-row {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.83rem; gap: 0.5rem;
+}
+.policy-result-row > span:first-child { color: #64748b; }
 
 /* ── ContentProtector controls ── */
 .protect-header { display: flex; align-items: center; gap: 0.75rem; margin-bottom: 1.25rem; }

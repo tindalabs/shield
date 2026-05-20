@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "lib": ["ESNext", "DOM"],
+    "strict": true,
+    "jsx": "preserve",
+    "skipLibCheck": true,
+    "paths": {
+      "@tindalabs/shield": ["../src/index.ts"]
+    }
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue"]
+}

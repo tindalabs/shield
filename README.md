@@ -112,6 +112,94 @@ interface ShieldAssessment {
 
 ---
 
+## Risk-gated protection — `assessAndProtect()`
+
+`assessAndProtect()` bridges both APIs with a declarative policy engine. It runs `assess()`, evaluates a set of rules against the result, and activates a `ContentProtector` with exactly the strategies each session warrants — zero overhead for legitimate users, full defence for automation and high-risk sessions.
+
+```ts
+import { assessAndProtect } from '@tindalabs/shield';
+
+const { assessment, protector } = await assessAndProtect(contentEl, {
+  policies: [
+    // Watermark any session with measurable risk — embed score for traceability
+    {
+      when: { riskScore: { gte: 0.2 } },
+      enable: ['enableWatermark'],
+      watermarkOptions: (a) => ({ text: `RISK-${Math.round(a.risk.score * 100)}` }),
+    },
+    // Selection + clipboard lockdown for high-risk sessions
+    {
+      when: { riskScore: { gte: 0.6 } },
+      enable: ['preventSelection', 'preventClipboard', 'preventKeyboardShortcuts'],
+    },
+    // Always block headless browsers regardless of score
+    {
+      when: { signals: { 'shield.automation.headless': true } },
+      enable: ['preventScreenshots', 'preventContextMenu'],
+    },
+  ],
+});
+
+// protector is null when no rules matched (legitimate session — no overhead)
+if (protector) {
+  console.log('Protection active — score:', assessment.risk.score);
+}
+```
+
+All matched rules are merged: a session with score `0.8` triggers watermark + selection + clipboard + keyboard in one pass.
+
+### With OTel / Blindspot
+
+Pass a `spanEmitter` to emit `shield.policy.triggered` events and wire `ContentProtector` callbacks to child spans:
+
+```ts
+import { assessAndProtect } from '@tindalabs/shield';
+import { getTracer, getRouteContext } from '@tindalabs/blindspot';
+
+await assessAndProtect(contentEl, {
+  policies: [/* ... */],
+  spanEmitter: (name, attrs) => {
+    const span = getTracer().startSpan(name, { attributes: attrs }, getRouteContext());
+    span.end();
+  },
+});
+```
+
+### `PolicyEngineOptions`
+
+| Option | Type | Description |
+|---|---|---|
+| `policies` | `PolicyRule[]` | Ordered list of rules. All matching rules are merged. |
+| `targetElement` | `HTMLElement \| null` | Element to protect. Defaults to `document.body`. |
+| `customHandlers` | `CustomEventHandlers` | Forwarded to `ContentProtector`. |
+| `spanEmitter` | `SpanEmitter` | Uses `attachShieldToSpan` and emits policy OTel events. |
+| `assessOptions` | `AssessOptions` | Forwarded to the internal `assess()` call. |
+
+### `PolicyRule`
+
+| Field | Type | Description |
+|---|---|---|
+| `when` | `PolicyCondition` | Conditions that must all match. An empty `{}` always matches. |
+| `enable` | `StrategyKey[]` | Strategies to activate when the condition matches. |
+| `watermarkOptions` | `WatermarkOptions \| (a: ShieldAssessment) => WatermarkOptions` | Static or factory watermark config. Last matched rule wins. |
+
+### `PolicyCondition`
+
+| Field | Type | Description |
+|---|---|---|
+| `riskScore.gte` | `number` | Score must be ≥ this value. |
+| `riskScore.lt` | `number` | Score must be < this value. |
+| `signals` | `Partial<ShieldSignals>` | All listed signal values must match. |
+
+### OTel events emitted
+
+| Event | When |
+|---|---|
+| `shield.policy.triggered` | At least one rule matched — includes `shield.policy.risk_score`, `shield.policy.matched_rules`, `shield.policy.enabled_strategies` |
+| `shield.policy.evaluated` | No rules matched — includes `shield.policy.matched_rules: 0`, `shield.policy.protection_activated: false` |
+
+---
+
 ## Active protection — `ContentProtector`
 
 Shield also exports the full protection suite for active content defense: blocks DevTools, prevents copy/print/selection, adds watermarks, detects extension injection and iframe embedding.
