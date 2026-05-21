@@ -36,9 +36,13 @@
   ],
   "author": "Isonimus",
   "license": "MIT",
+  "homepage": "https://github.com/tindalabs/shield#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tindalabs/shield.git"
+    "url": "git+https://github.com/tindalabs/shield.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tindalabs/shield/issues"
   },
   "description": "Browser tamper detection for hostile environments. Detects DevTools, automation drivers, extension injection, and environment spoofing — surfaces findings as structured risk signals, not just boolean flags.",
   "devDependencies": {
