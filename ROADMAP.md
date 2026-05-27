@@ -35,13 +35,14 @@ Implemented via the `isEventType()` type guard in `src/core/mediator/eventDataTy
 
 ### 2. ScreenshotDetector Consistency
 
-**Priority**: Medium | **Effort**: 30 mins | **Status**: To do
+**Priority**: Medium | **Effort**: 30 mins | **Status**: Done ✅ (resolved by deletion)
 
-`screenshotDetector.ts` adds event listeners directly to `window` instead of using `eventManager`, which could cause memory leaks.
+`screenshotDetector.ts` added event listeners directly to `window` instead of using `eventManager`. Investigation found the file was **dead code**: zero references anywhere, not exported (the `utils` barrel only exports `environment` and `dom`), and its heuristics were already duplicated by `ScreenshotStrategy`, which correctly uses `eventManager` via `registerEvent`. The leak concern was therefore moot (the class was never instantiated), so the orphan was deleted rather than refactored.
+
+If screenshot detection later grows more independent heuristics, adopt the DevTools `Strategy → DetectorManager → [detectors]` pattern starting from `ScreenshotStrategy`'s real logic.
 
 #### Tasks
-- [ ] Refactor `screenshotDetector.ts` to use `eventManager`
-- [ ] Ensure proper cleanup in `stopMonitoring()`
+- [x] ~~Refactor `screenshotDetector.ts` to use `eventManager`~~ → deleted dead duplicate; `ScreenshotStrategy` already uses `eventManager`
 
 ---
 
