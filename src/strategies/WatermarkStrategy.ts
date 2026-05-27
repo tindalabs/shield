@@ -14,6 +14,15 @@ export class WatermarkStrategy extends AbstractStrategy {
   private isFullPageWatermark = false
   private watermarkContainer: HTMLElement | null = null
   private osInfo: { name: "mac" | "linux" | "windows" | "unknown" }
+  /**
+   * Unique per-instance id. Watermark containers are tagged with this so that
+   * cleanup queries only ever match THIS instance's container. Without it, two
+   * concurrent WatermarkStrategy instances (e.g. two ContentProtectors on the
+   * same or nested elements) would delete each other's containers, and each
+   * auto-restore would re-trigger the other's observer — an infinite
+   * MutationObserver loop that freezes the page.
+   */
+  private readonly instanceId = `wm-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 
   /**
    * Create a new WatermarkStrategy
@@ -49,8 +58,10 @@ export class WatermarkStrategy extends AbstractStrategy {
     return this.safeExecute("createWatermarks", StrategyErrorType.APPLICATION, () => {
       if (!this.targetElement || !isBrowser()) return
 
-      // Check if watermark container already exists
-      const existingContainer = document.querySelector(".content-security-watermark-container")
+      // Check if THIS instance's watermark container already exists. Scoped to
+      // instanceId so we never remove a container owned by another concurrent
+      // WatermarkStrategy (doing so would start a cross-instance restore loop).
+      const existingContainer = document.querySelector(`[data-watermark-instance="${this.instanceId}"]`)
       if (existingContainer) {
         this.log("Watermark container already exists, removing first")
         if (existingContainer.parentNode) {
@@ -70,6 +81,7 @@ export class WatermarkStrategy extends AbstractStrategy {
       const container = document.createElement("div")
       container.className = "content-security-watermark-container"
       container.setAttribute("data-watermark-id", `watermark-${Date.now()}`)
+      container.setAttribute("data-watermark-instance", this.instanceId)
       this.watermarkContainer = container
 
       // Set container styles based on whether it's full-page or element-specific
@@ -219,8 +231,10 @@ export class WatermarkStrategy extends AbstractStrategy {
         }
       }
 
-      // Also try to remove by class name in case references were lost
-      const containers = document.querySelectorAll(".content-security-watermark-container")
+      // Also try to remove by instance id in case references were lost. Scoped
+      // to this instance so we never tear down another concurrent strategy's
+      // watermark (which would trigger its auto-restore observer in a loop).
+      const containers = document.querySelectorAll(`[data-watermark-instance="${this.instanceId}"]`)
       containers.forEach((container) => {
         if (container.parentNode) {
           container.parentNode.removeChild(container)

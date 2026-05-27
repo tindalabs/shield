@@ -1,40 +1,52 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import type { ShieldAssessment } from '../types/assessment';
 import type { ContentProtectionOptions } from '../types/index';
-import { assessAndProtect } from '../policy';
 
-// Minimal ContentProtector stub — avoids real DOM strategy initialisation
-const makeProtectorStub = () => ({
-  protect:       jest.fn<() => void>(),
-  dispose:       jest.fn<() => void>(),
-  updateOptions: jest.fn<(o: Partial<ContentProtectionOptions>) => void>(),
-  unprotect:     jest.fn<() => void>(),
-  isProtected:   jest.fn<() => boolean>().mockReturnValue(false),
-  getStrategy:   jest.fn(),
-  hasStrategy:   jest.fn<() => boolean>().mockReturnValue(false),
-});
+// NOTE: this suite runs under ts-jest's ESM preset (useESM). Static jest.mock()
+// is unreliable in ESM — Jest's per-file module isolation is weaker, so once any
+// other test file links the real ../core/index or ../otel into the worker's
+// module registry, a static jest.mock() here silently no-ops and the real
+// ContentProtector leaks in ("mockImplementation is not a function" in the full
+// suite, but passing in isolation). jest.unstable_mockModule + dynamic import()
+// is the supported ESM mocking path and is immune to that ordering. See
+// https://jestjs.io/docs/ecmascript-modules#module-mocking-in-esm
+
+// Minimal ContentProtector stub — avoids real DOM strategy initialisation.
+// Declared as a function so it is hoisted above the mock factories below.
+function makeProtectorStub() {
+  return {
+    protect:       jest.fn<() => void>(),
+    dispose:       jest.fn<() => void>(),
+    updateOptions: jest.fn<(o: Partial<ContentProtectionOptions>) => void>(),
+    unprotect:     jest.fn<() => void>(),
+    isProtected:   jest.fn<() => boolean>().mockReturnValue(false),
+    getStrategy:   jest.fn(),
+    hasStrategy:   jest.fn<() => boolean>().mockReturnValue(false),
+  };
+}
 
 // Capture the options ContentProtector was constructed with
 let capturedOptions: ContentProtectionOptions | null = null;
 let protectorStub = makeProtectorStub();
 
-// Inline mocks injected via options — no jest.mock() needed
-jest.mock('../core/index', () => ({
-  ContentProtector: jest.fn().mockImplementation((...args: unknown[]) => {
+jest.unstable_mockModule('../core/index', () => ({
+  ContentProtector: jest.fn((...args: unknown[]) => {
     capturedOptions = args[0] as ContentProtectionOptions;
     return protectorStub;
   }),
 }));
 
-jest.mock('../otel', () => ({
-  attachShieldToSpan: jest.fn().mockImplementation((...args: unknown[]) => {
+jest.unstable_mockModule('../otel', () => ({
+  attachShieldToSpan: jest.fn((...args: unknown[]) => {
     capturedOptions = args[0] as ContentProtectionOptions;
     return protectorStub;
   }),
 }));
 
-import { ContentProtector } from '../core/index';
-import { attachShieldToSpan } from '../otel';
+// Dynamic imports AFTER the mock registrations so the mocked modules are used.
+const { assessAndProtect } = await import('../policy');
+const { ContentProtector } = await import('../core/index');
+const { attachShieldToSpan } = await import('../otel');
 
 const MockContentProtector  = ContentProtector  as jest.MockedClass<typeof ContentProtector>;
 const mockAttachShieldToSpan = attachShieldToSpan as jest.MockedFunction<typeof attachShieldToSpan>;
