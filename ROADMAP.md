@@ -10,7 +10,7 @@ Shield covers the full environment and tamper-detection surface: DevTools detect
 
 ### 1. Type Safety Improvements
 
-**Priority**: High | **Effort**: 1-2 hours | **Status**: Done
+**Priority**: High | **Effort**: 1-2 hours | **Status**: Done ✅
 
 Event handlers use unsafe `as` type assertions instead of leveraging the existing `EventDataMap`:
 
@@ -22,12 +22,14 @@ const data = event.data as { isOpen: boolean };
 type DevToolsData = EventDataMap[ProtectionEventType.DEVTOOLS_STATE_CHANGE];
 ```
 
+Implemented via the `isEventType()` type guard in `src/core/mediator/eventDataTypes.ts`, used across all event handlers.
+
 #### Tasks
-- [ ] Create type guard helpers for event data validation
-- [ ] Update `devToolsEventHandler.ts` to use typed event data
-- [ ] Update `extensionEventHandlers.ts` to use typed event data
-- [ ] Update `protectedContentManager.ts` to use typed event data
-- [ ] Update `securityOverlayManager.ts` to use typed event data
+- [x] Create type guard helpers for event data validation
+- [x] Update `devToolsEventHandler.ts` to use typed event data
+- [x] Update `extensionEventHandlers.ts` to use typed event data
+- [x] Update `protectedContentManager.ts` to use typed event data
+- [x] Update `securityOverlayManager.ts` to use typed event data
 
 ---
 
@@ -45,9 +47,9 @@ type DevToolsData = EventDataMap[ProtectionEventType.DEVTOOLS_STATE_CHANGE];
 
 ### 3. ClipboardStrategy Integration
 
-**Priority**: High | **Effort**: 1-2 hours | **Status**: To do
+**Priority**: High | **Effort**: 1-2 hours | **Status**: Done ✅
 
-`ClipboardStrategy` is fully implemented but **NOT integrated** into `ContentProtector`.
+`ClipboardStrategy` is now integrated into `ContentProtector` (see `src/core/ContentProtector.ts`, gated on `options.preventClipboard`).
 
 **Current Status**: The strategy is mature with:
 - ✅ Copy/cut/paste event handling
@@ -56,10 +58,10 @@ type DevToolsData = EventDataMap[ProtectionEventType.DEVTOOLS_STATE_CHANGE];
 - ✅ Proper cleanup/restore methods
 
 #### Tasks
-- [ ] Add `preventClipboard` option to `ContentProtectionOptions`
-- [ ] Add `clipboardOptions` to `ContentProtectionOptions`
-- [ ] Integrate ClipboardStrategy initialization in `ContentProtector.initializeStrategies()`
-- [ ] Add unit tests for clipboard protection
+- [x] Add `preventClipboard` option to `ContentProtectionOptions`
+- [x] Add `clipboardOptions` to `ContentProtectionOptions`
+- [x] Integrate ClipboardStrategy initialization in `ContentProtector.initializeStrategies()`
+- [x] Add unit tests for clipboard protection (`src/tests/strategies/ClipboardStrategy.test.ts`)
 - [ ] Update documentation
 
 ---
@@ -87,7 +89,7 @@ Three abstract classes duplicate logging/error-handling functionality:
 
 ### 5. Risk-Gated Adaptive Protection (`assessAndProtect`)
 
-**Priority**: High | **Effort**: 3-5 hours | **Status**: To do
+**Priority**: High | **Effort**: 3-5 hours | **Status**: Done ✅ (implemented in `src/policy.ts`, exported from `src/index.ts`, tested in `src/tests/policy.test.ts`)
 
 `assess()` and `ContentProtector` are currently independent APIs — users must manually read the assessment result and activate strategies. A declarative policy bridge closes this gap: run `assess()` once, then activate only the strategies that are warranted by the detected signals. Legitimate users see no protection overhead; automation and scrapers trigger it automatically.
 
@@ -134,13 +136,13 @@ const protector = await assessAndProtect(element, {
 - *Risk-proportional DRM* — financial, legal, and media documents get protection only when the session warrants it
 
 #### Tasks
-- [ ] Design `PolicyEngine` type: `PolicyRule[]` with `when` (signal conditions + risk threshold) and `enable` (strategy keys)
-- [ ] Implement `assessAndProtect(element, options)` — runs `assess()`, evaluates policies in order, initialises `ContentProtector` with the union of matched strategies
-- [ ] Support dynamic watermark text via `watermarkOptions.text: string | ((assessment: ShieldAssessment) => string)`
-- [ ] Emit OTel span events for each triggered policy rule (name: `shield.policy.triggered`, attrs: matched signals + enabled strategies)
-- [ ] Export `assessAndProtect` and `PolicyRule` from `src/index.ts`
-- [ ] Add unit tests: no-match policy (no protector created), single-match, multi-match, watermark text factory, OTel emit
-- [ ] Add example to README and `REFERENCE.md` under "Adaptive Protection"
+- [x] Design `PolicyEngine` type: `PolicyRule[]` with `when` (signal conditions + risk threshold) and `enable` (strategy keys)
+- [x] Implement `assessAndProtect(element, options)` — runs `assess()`, evaluates policies in order, initialises `ContentProtector` with the union of matched strategies
+- [x] Support dynamic watermark text via `watermarkOptions.text: string | ((assessment: ShieldAssessment) => string)`
+- [x] Emit OTel span events for each triggered policy rule (name: `shield.policy.triggered`, attrs: matched signals + enabled strategies)
+- [x] Export `assessAndProtect` and `PolicyRule` from `src/index.ts`
+- [x] Add unit tests: no-match policy (no protector created), single-match, multi-match, watermark text factory, OTel emit
+- [x] Add example to README and `REFERENCE.md` under "Adaptive Protection"
 - [ ] Add use-case section to README: "Anti-AI scraping / adaptive content protection"
 
 ---
@@ -153,16 +155,16 @@ Full report: `c-level/reports/shield_2026-05-19.md`
 
 ### Immediate (this week)
 
-- [ ] Fix `BrowserExtensionOptions.showOverlay: true` → `showOverlay?: boolean` in `src/types/index.ts:203` — compile-breaking for any consumer of extension detection
-- [ ] Add `coverage/` to `.gitignore` — generated output should not be in version control
-- [ ] Add `SECURITY.md` with maintainer contact and responsible disclosure path (90-day timeline)
+- [x] Fix `BrowserExtensionOptions.showOverlay: true` → `showOverlay?: boolean` in `src/types/index.ts:203` — compile-breaking for any consumer of extension detection
+- [x] Add `coverage/` to `.gitignore` — generated output should not be in version control
+- [x] Add `SECURITY.md` with maintainer contact and responsible disclosure path (90-day timeline)
 - [ ] Tag `v0.1.0` and push — triggers `publish.yml`; makes `npm install @tindalabs/shield` work
 
 ### Next Sprint (1–4 weeks)
 
 - [ ] Move `attachShieldToSpan()` example to main README with "Zero runtime dependencies" as first badge — OTel composability is Shield's strongest differentiator and is currently buried in `REFERENCE.md`
 - [ ] Add README badges (npm version, CI status, coverage, MIT license)
-- [ ] Add CONTRIBUTING.md + PR template (`.github/PULL_REQUEST_TEMPLATE.md`)
+- [ ] Add CONTRIBUTING.md (done ✅) + PR template (`.github/PULL_REQUEST_TEMPLATE.md` — still missing)
 - [ ] Refactor `screenshotDetector.ts` to use `eventManager` (ROADMAP item #2) — current direct `window.addEventListener` calls bypass cleanup tracking and leak in SPAs
 - [ ] Add `.github/dependabot.yml` for monthly dev-dep updates
 - [ ] Increase test coverage to 60%+ on `ContentProtector`, `ClipboardStrategy`, and all `AbstractStrategy.remove()` / cleanup paths
