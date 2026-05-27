@@ -24,6 +24,8 @@ npm run format     # Prettier
 
 All three checks (`lint`, `test`, `build`) must pass before submitting a PR — they run automatically in CI.
 
+> **Run tests via `npm test`, not bare `jest`.** The suite runs as ESM, and `npm test` launches Jest with `node --experimental-vm-modules` (see the `test` script in `package.json`). Invoking `jest` directly omits that flag and silently matches **0 tests**. For the same reason, tests that mock modules must use `jest.unstable_mockModule` + dynamic `import()` rather than static `jest.mock()`, which is unreliable under ESM.
+
 ## Submitting a pull request
 
 1. Fork the repository and create a branch from `main`.
