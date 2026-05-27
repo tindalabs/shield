@@ -211,8 +211,12 @@ const protector = new ContentProtector({
   preventDevTools: true,
   preventKeyboardShortcuts: true,
   preventPrinting: true,
+  preventClipboard: true,
+  clipboardOptions: { preventCopy: true, preventCut: true, preventPaste: false },
   enableWatermark: true,
   watermarkOptions: { text: 'Confidential', userId: 'user-123' },
+  // …and more (selection, context menu, screenshots, extensions, iframe embedding)
+  // — see REFERENCE.md for the complete options table.
 });
 
 protector.protect();

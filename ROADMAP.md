@@ -63,7 +63,7 @@ If screenshot detection later grows more independent heuristics, adopt the DevTo
 - [x] Add `clipboardOptions` to `ContentProtectionOptions`
 - [x] Integrate ClipboardStrategy initialization in `ContentProtector.initializeStrategies()`
 - [x] Add unit tests for clipboard protection (`src/tests/strategies/ClipboardStrategy.test.ts`)
-- [ ] Update documentation
+- [x] Update documentation (README `ContentProtector` example + new complete "ContentProtector Options" table in REFERENCE.md covering `clipboardOptions` and all other strategy options)
 
 ---
 
