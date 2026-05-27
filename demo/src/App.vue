@@ -208,7 +208,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed, onMounted, onUnmounted } from 'vue';
+import { ref, shallowRef, reactive, computed, onMounted, onUnmounted } from 'vue';
 import { assess, ContentProtector, assessAndProtect } from '@tindalabs/shield';
 import type { ShieldAssessment, PolicyResult } from '@tindalabs/shield';
 import shieldImg from './assets/shield.webp';
@@ -272,7 +272,10 @@ const POLICIES = [
 const displayPolicies = POLICIES;
 
 const policyRunning  = ref(false);
-const policyResult   = ref<PolicyResult | null>(null);
+// shallowRef, not ref: result.protector is a live ContentProtector holding the
+// target DOM node + mediator graph. A deep ref would proxy that whole graph
+// (recursing into the DOM), locking the main thread and freezing the page.
+const policyResult   = shallowRef<PolicyResult | null>(null);
 const matchedRuleIndexes = ref<Set<number>>(new Set());
 const policyActiveStrategies = ref<string[]>([]);
 
@@ -293,6 +296,17 @@ async function runPolicyEngine() {
   policyProtector = null;
   matchedRuleIndexes.value = new Set();
   policyActiveStrategies.value = [];
+  // The manual protector and the policy protector target the same element.
+  // Two ContentProtectors with watermark observers on the same node ping-pong
+  // each other's DOM mutations forever (DOMObserver MutationObserver loop),
+  // freezing the page — so the two modes are mutually exclusive. Tear down the
+  // manual protector before activating the policy one.
+  if (protector) {
+    protector.unprotect();
+    protector = null;
+    isProtected.value = false;
+    logEvent('System', 'Manual protection disabled — policy engine takes over');
+  }
   try {
     // Run with the protected-area element so the watermark appears in the right place
     const result = await assessAndProtect(protectedContent.value, {
@@ -318,7 +332,7 @@ async function runPolicyEngine() {
       if (riskScore?.lt  !== undefined && score >= riskScore.lt)  ok = false;
       if (sigCond) {
         for (const [k, v] of Object.entries(sigCond)) {
-          if ((signals as Record<string, unknown>)[k] !== v) { ok = false; break; }
+          if ((signals as unknown as Record<string, unknown>)[k] !== v) { ok = false; break; }
         }
       }
       if (ok) {
@@ -471,6 +485,17 @@ function toggleProtection() {
     protector?.unprotect();
     logEvent('System', 'Protection disabled');
   } else {
+    // Mutually exclusive with the policy protector (same target element +
+    // watermark observers ⇒ MutationObserver loop). Tear down any active
+    // policy protection before enabling manual protection.
+    if (policyProtector) {
+      policyProtector.dispose();
+      policyProtector = null;
+      policyResult.value = null;
+      matchedRuleIndexes.value = new Set();
+      policyActiveStrategies.value = [];
+      logEvent('System', 'Policy protection cleared — manual protection takes over');
+    }
     protector = buildProtector();
     protector?.protect();
     logEvent('System', 'Protection enabled');

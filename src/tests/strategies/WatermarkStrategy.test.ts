@@ -41,4 +41,28 @@ describe('WatermarkStrategy', () => {
     // Clean up
     strategy.remove()
   })
+
+  it('two concurrent instances on the same element do not remove each other (no restore loop)', async () => {
+    const a = new WatermarkStrategy({ text: 'A', density: 1 }, document.body, false)
+    const b = new WatermarkStrategy({ text: 'B', density: 1 }, document.body, false)
+
+    a.apply()
+    b.apply()
+
+    // Both instances' containers must coexist — pre-fix, b.apply() globally
+    // removed a's container, kicking off an infinite cross-instance restore loop.
+    const containers = document.querySelectorAll('.content-security-watermark-container')
+    expect(containers.length).toBe(2)
+
+    // Let any observer callbacks settle; the count must stay stable (no loop).
+    await new Promise((resolve) => setTimeout(resolve, 10))
+    expect(document.querySelectorAll('.content-security-watermark-container').length).toBe(2)
+
+    // Removing one leaves the other intact.
+    a.remove()
+    expect(document.querySelectorAll('.content-security-watermark-container').length).toBe(1)
+
+    b.remove()
+    expect(document.querySelectorAll('.content-security-watermark-container').length).toBe(0)
+  })
 })

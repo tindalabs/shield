@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       '@tindalabs/shield': path.resolve(__dirname, '../src/index.ts'),
+      '@': path.resolve(__dirname, '../src'),
     },
     extensions: ['.ts', '.js', '.vue'],
   },
