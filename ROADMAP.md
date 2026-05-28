@@ -171,6 +171,7 @@ Full report: `c-level/reports/shield_2026-05-19.md`
 - [ ] Refactor `screenshotDetector.ts` to use `eventManager` (ROADMAP item #2) — current direct `window.addEventListener` calls bypass cleanup tracking and leak in SPAs
 - [ ] Add `.github/dependabot.yml` for monthly dev-dep updates
 - [ ] Increase test coverage to 60%+ on `ContentProtector`, `ClipboardStrategy`, and all `AbstractStrategy.remove()` / cleanup paths
+- [ ] Add unit tests for the rest of `src/utils/` — currently only `SecurityOverlayManager` is covered (`src/tests/utils/SecurityOverlayManager.test.ts`, added with the auto-restore-leak fix). Still untested: `DOMObserver`, `eventManager`, `intervalManager`, `timeoutManager`, `protectedContentManager`, `keyboardShortcutManager`, `environment`, `dom`, `orientation`, `logging/simple/*`, `base/LoggableComponent`, and every individual detector under `utils/detectors/` (currently only exercised transitively by `DevToolsStrategy.test.ts`). Each is a small focused suite — most callers go through `eventManager`/`intervalManager`/`timeoutManager`, so those three are the highest-leverage targets. Also worth folding the 7 other `utils/` classes that still construct their own `SimpleLoggingService` (e.g. `securityOverlayManager` with its own `COMPONENT_NAME`) into `LoggableComponent` for further consolidation while writing the tests.
 - [ ] Write "migrating from disable-devtool" guide — captures incumbent's user base via search; name the gap: structured output, OTel, no boolean-only API
 
 ### Strategic (1–3 months)
