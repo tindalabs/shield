@@ -352,7 +352,14 @@ export class SecurityOverlayManager implements MediatorAware {
       if (activeOverlay && newOverlay && newOverlay.priority > activeOverlay.priority) {
         this.logger.log(`New overlay has higher priority, replacing active overlay`)
 
-        // Hide current overlay
+        // Re-queue the displaced overlay so it reappears once the new one is
+        // dismissed. Without this it stays in storage but is dropped from the
+        // visibility pipeline entirely — effectively orphaned. addToQueue is
+        // idempotent and sorts by priority, so ordering is preserved.
+        this.addToQueue(this.activeOverlayId)
+
+        // Hide current overlay (processQueue=false: we don't want it to pick
+        // the next queued item, we explicitly show the new high-priority one)
         this.hideOverlayById(this.activeOverlayId, false)
 
         // Show new overlay

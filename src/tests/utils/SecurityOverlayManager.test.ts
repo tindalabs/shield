@@ -146,19 +146,36 @@ describe('SecurityOverlayManager', () => {
   })
 
   describe('queueing and priority', () => {
-    it('higher-priority overlay supersedes the active one', () => {
+    it('higher-priority overlay supersedes the active one and re-queues the displaced one', () => {
       const lowId = manager.registerOverlay('A', 't-low', { blockEvents: true }, 0)
       const highId = manager.registerOverlay('B', 't-high', { blockEvents: true }, 10)
 
       expect(manager.getActiveOverlayId()).toBe(highId)
-      // The displaced low-priority overlay is hidden but still in storage.
-      // Note: the current implementation does NOT re-queue the displaced overlay,
-      // so it won't reappear after the high-priority one is dismissed. That's a
-      // potential UX gap separate from this test's scope.
+      // The displaced low-priority overlay is hidden, still in storage, AND in
+      // the queue so it can reappear after the high-priority one is dismissed.
       expect(manager.hasOverlay(lowId)).toBe(true)
+      expect(manager.getOverlayQueue()).toContain(lowId)
       // Exactly one overlay is rendered at a time.
       expect(countOverlays()).toBe(1)
       expect(countBlockers()).toBe(1)
+    })
+
+    it('displaced lower-priority overlay reappears once the higher-priority one is dismissed', () => {
+      const lowId  = manager.registerOverlay('A', 't-low',  { title: 'Low',  blockEvents: true }, 0)
+      const highId = manager.registerOverlay('B', 't-high', { title: 'High', blockEvents: true }, 10)
+
+      expect(manager.getActiveOverlayId()).toBe(highId)
+
+      // Dismiss the high-priority overlay — the displaced low-priority one
+      // should pop back from the queue and become active.
+      manager.removeOverlayById(highId)
+
+      expect(manager.getActiveOverlayId()).toBe(lowId)
+      expect(manager.getOverlayQueue()).not.toContain(lowId)
+      expect(countOverlays()).toBe(1)
+      expect(countBlockers()).toBe(1)
+      // And the visible overlay should actually be the low-priority one
+      expect(document.body.textContent ?? '').toContain('Low')
     })
 
     it('lower-priority overlays go into the queue', () => {
