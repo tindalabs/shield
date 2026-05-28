@@ -2,7 +2,7 @@ import type { ProtectionStrategy } from "../types"
 import { eventManager } from "../utils/eventManager"
 import { isBrowser } from "../utils/environment"
 import type { MediatorAware, ProtectionMediator } from "../core/mediator/types"
-import { SimpleLoggingService } from "../utils/logging/simple/SimpleLoggingService"
+import { LoggableComponent } from "../utils/base/LoggableComponent"
 
 /**
  * Error types for protection strategies
@@ -47,13 +47,11 @@ export class StrategyError extends Error {
  * Abstract base class for protection strategies
  * Implements common functionality to reduce duplication
  */
-export abstract class AbstractStrategy implements ProtectionStrategy, MediatorAware {
+export abstract class AbstractStrategy extends LoggableComponent implements ProtectionStrategy, MediatorAware {
+  /** Alias of `COMPONENT_NAME` retained for the strategy public API (and used as the owner key in `eventManager` registrations). */
   public readonly STRATEGY_NAME: string
-  public readonly COMPONENT_NAME: string
-  protected debugMode: boolean
   protected mediator: ProtectionMediator | null = null
   protected isAppliedFlag = false
-  protected logger: SimpleLoggingService
   protected eventIds: string[] = []
 
   /**
@@ -62,10 +60,8 @@ export abstract class AbstractStrategy implements ProtectionStrategy, MediatorAw
    * @param debugMode Enable debug mode for troubleshooting
    */
   constructor(strategyName: string, debugMode = false) {
+    super(strategyName, debugMode)
     this.STRATEGY_NAME = strategyName
-    this.COMPONENT_NAME = strategyName
-    this.debugMode = debugMode
-    this.logger = new SimpleLoggingService(strategyName, debugMode)
   }
 
   /**
@@ -131,22 +127,6 @@ export abstract class AbstractStrategy implements ProtectionStrategy, MediatorAw
   }
 
   /**
-   * Get the debug mode status
-   */
-  public isDebugEnabled(): boolean {
-    return this.debugMode
-  }
-
-  /**
-   * Set debug mode
-   */
-  public setDebugMode(enabled: boolean): void {
-    this.debugMode = enabled
-    this.logger.setDebugMode(enabled)
-    this.logger.log(`Debug mode ${enabled ? "enabled" : "disabled"}`)
-  }
-
-  /**
    * Handle an error that occurred in the strategy
    * @param errorType Type of error
    * @param message Error message
@@ -163,33 +143,6 @@ export abstract class AbstractStrategy implements ProtectionStrategy, MediatorAw
     } else {
       console.error(error.message)
     }
-  }
-
-  /**
-   * Log a debug message if debug mode is enabled
-   * @param message Message to log
-   * @param args Additional arguments to log
-   */
-  protected log(message: string, ...args: unknown[]): void {
-    this.logger.log(message, ...args)
-  }
-
-  /**
-   * Log a warning message
-   * @param message Warning message
-   * @param args Additional arguments to log
-   */
-  protected warn(message: string, ...args: unknown[]): void {
-    this.logger.warn(message, ...args)
-  }
-
-  /**
-   * Log an error message
-   * @param message Error message
-   * @param args Additional arguments to log
-   */
-  protected error(message: string, ...args: unknown[]): void {
-    this.logger.error(message, ...args)
   }
 
   /**

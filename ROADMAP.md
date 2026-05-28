@@ -69,7 +69,7 @@ If screenshot detection later grows more independent heuristics, adopt the DevTo
 
 ### 4. Architecture - Shared LoggableComponent Base Class
 
-**Priority**: Low | **Effort**: 2-3 hours | **Status**: To do
+**Priority**: Low | **Effort**: 2-3 hours | **Status**: Done ✅
 
 Three abstract classes duplicate logging/error-handling functionality:
 
@@ -79,12 +79,14 @@ Three abstract classes duplicate logging/error-handling functionality:
 | `AbstractDevToolsDetector` | safeExecute, handleError |
 | `AbstractEventHandler` | log/warn/error |
 
+`LoggableComponent` now owns `COMPONENT_NAME` + `debugMode` + `logger` + `setDebugMode`/`isDebugEnabled`/`log`/`warn`/`error`. The three abstracts extend it and keep only their own concerns. `safeExecute`/`handleError` stayed on the strategy/detector bases because their error-type enums diverge (`StrategyErrorType` vs `DetectorErrorType`) — sharing them would require generics that obscure the call sites. `AbstractEventHandler`'s prior `log`/`warn` overrides were redundant (they re-implemented gates that `SimpleLoggingService` already does) and were removed.
+
 #### Tasks
-- [ ] Create `src/utils/base/LoggableComponent.ts`
-- [ ] Refactor `AbstractStrategy` to extend it
-- [ ] Refactor `AbstractDevToolsDetector` to extend it
-- [ ] Refactor `AbstractEventHandler` to extend it
-- [ ] Update tests, verify build passes
+- [x] Create `src/utils/base/LoggableComponent.ts`
+- [x] Refactor `AbstractStrategy` to extend it
+- [x] Refactor `AbstractDevToolsDetector` to extend it
+- [x] Refactor `AbstractEventHandler` to extend it
+- [x] Update tests, verify build passes (tsc clean, build green, 46/46 tests pass)
 
 ---
 

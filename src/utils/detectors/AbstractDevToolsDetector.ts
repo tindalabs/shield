@@ -1,5 +1,5 @@
 import type { DevToolsDetector, DevToolsDetectorOptions } from "./detectorInterface"
-import { SimpleLoggingService } from "../logging/simple/SimpleLoggingService"
+import { LoggableComponent } from "../base/LoggableComponent"
 
 /**
  * Enum representing different types of errors that can occur in detectors
@@ -51,12 +51,10 @@ export enum DetectorErrorType {
  * Abstract base class for DevTools detectors
  * Implements common functionality to reduce duplication across detector implementations
  */
-export abstract class AbstractDevToolsDetector implements DevToolsDetector {
-  protected debugMode: boolean
+export abstract class AbstractDevToolsDetector extends LoggableComponent implements DevToolsDetector {
   protected isDevToolsOpen = false
   protected isChecking = false
   protected onDevToolsChange: (isOpen: boolean) => void
-  protected logger: SimpleLoggingService
 
   /**
    * Create a new detector instance
@@ -67,10 +65,8 @@ export abstract class AbstractDevToolsDetector implements DevToolsDetector {
     protected readonly detectorName: string,
     options: DevToolsDetectorOptions = {},
   ) {
+    super(detectorName, !!options.debugMode)
     this.onDevToolsChange = options.onDevToolsChange || ((): void => {})
-    this.debugMode = !!options.debugMode
-    this.logger = new SimpleLoggingService(detectorName, !!options.debugMode)
-
     this.logger.log("Initialized")
   }
 
@@ -157,14 +153,5 @@ export abstract class AbstractDevToolsDetector implements DevToolsDetector {
    */
   public dispose(): void {
     this.logger.log("Disposed")
-  }
-
-  /**
-   * Set debug mode
-   * @param enabled Whether debug mode should be enabled
-   */
-  public setDebugMode(enabled: boolean): void {
-    this.debugMode = enabled
-    this.logger.setDebugMode(enabled)
   }
 }
