@@ -826,6 +826,25 @@ export class SecurityOverlayManager implements MediatorAware {
       if (currentOverlay && currentOverlay.options.autoRestore !== false) {
         this.logger.log(`Auto-restoring overlay ${overlay.id}`)
 
+        // Stop observing before we detach any surviving element below —
+        // otherwise our own removeChild re-enters this handler and would null
+        // the freshly created references.
+        if (this.domObserver) {
+          this.domObserver.stopObserving()
+        }
+
+        // If only one of the (overlay, blocker) pair was removed manually
+        // (e.g. devtools → delete node on the overlay), the other is still
+        // attached to document.body. Detach it now, otherwise the upcoming
+        // showOverlayById() appends a fresh copy and the orphan accumulates
+        // on every restore cycle (#security-event-blocker stack).
+        if (currentOverlay.element && currentOverlay.element.parentNode) {
+          currentOverlay.element.parentNode.removeChild(currentOverlay.element)
+        }
+        if (currentOverlay.blocker && currentOverlay.blocker.parentNode) {
+          currentOverlay.blocker.parentNode.removeChild(currentOverlay.blocker)
+        }
+
         // Mark as not visible
         currentOverlay.isVisible = false
         currentOverlay.element = null
