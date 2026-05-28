@@ -146,7 +146,7 @@ const protector = await assessAndProtect(element, {
 - [x] Export `assessAndProtect` and `PolicyRule` from `src/index.ts`
 - [x] Add unit tests: no-match policy (no protector created), single-match, multi-match, watermark text factory, OTel emit
 - [x] Add example to README and `REFERENCE.md` under "Adaptive Protection"
-- [ ] Add use-case section to README: "Anti-AI scraping / adaptive content protection"
+- [x] Add use-case section to README: "Anti-AI scraping / adaptive content protection" — new "Use cases — adaptive content protection" section covering anti-AI scraping (with forensic-trace watermark factory example), risk-proportional DRM, and a "when *not* to reach for it" note pointing back to plain `ContentProtector`
 
 ---
 

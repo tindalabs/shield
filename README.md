@@ -200,6 +200,38 @@ await assessAndProtect(contentEl, {
 
 ---
 
+## Use cases — adaptive content protection
+
+`assessAndProtect()` exists for the awkward middle ground: blanket protection breaks the experience for legitimate users, but no protection lets scrapers walk away with everything. The policy engine activates only the strategies the session's risk profile warrants — humans see nothing, automation hits a wall.
+
+### Anti-AI scraping
+
+LLM training crawlers, prompt-based scrapers, and headless research agents share the same signal profile as conventional automation: `shield.automation.webdriver`, `shield.automation.headless`, patched-API heuristics, missing plugin metadata. A single policy rule flips watermarking and selection/clipboard lockdown on those sessions while human visitors get the unmodified page.
+
+The `watermarkOptions` factory receives the full assessment, so anything that *does* get scraped carries a forensic trace back to the session that extracted it:
+
+```ts
+{
+  when: { signals: { 'shield.automation.headless': true } },
+  enable: ['enableWatermark', 'preventSelection', 'preventClipboard'],
+  watermarkOptions: (a) => ({
+    text: `SHIELD-${Math.round(a.risk.score * 100)}-${Date.now().toString(36)}`,
+  }),
+}
+```
+
+Pair with `spanEmitter` and every triggered rule emits `shield.policy.triggered` to your OTel pipeline — operators can see in real time *how often, and by what signal,* their content is being targeted, without instrumenting strategies by hand.
+
+### Risk-proportional DRM
+
+Financial, legal, and media documents need strong protection — but blanket DRM breaks screen readers, accessibility tooling, and developers debugging their own portal. Risk-keyed policy rules flip protection on only when warranted (high risk, automation signals, specific extensions) and leave the long tail of normal sessions completely untouched. The same engine handles both ends of the risk spectrum with one config.
+
+### When *not* to reach for it
+
+If every session needs the same protection (e.g. a known-private internal tool where any visitor is high-trust by definition), skip the engine and use `ContentProtector` directly (next section). `assessAndProtect()` adds an `assess()` round trip and is only worth it when protection should vary per session.
+
+---
+
 ## Active protection — `ContentProtector`
 
 Shield also exports the full protection suite for active content defense: blocks DevTools, prevents copy/print/selection, adds watermarks, detects extension injection and iframe embedding.
