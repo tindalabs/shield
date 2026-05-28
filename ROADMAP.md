@@ -171,10 +171,10 @@ Full report: `c-level/reports/shield_2026-05-19.md`
 - [ ] Refactor `screenshotDetector.ts` to use `eventManager` (ROADMAP item #2) — current direct `window.addEventListener` calls bypass cleanup tracking and leak in SPAs
 - [ ] Add `.github/dependabot.yml` for monthly dev-dep updates
 - [x] ~~Increase test coverage to 60%+ on `ContentProtector`, `ClipboardStrategy`, and all `AbstractStrategy.remove()` / cleanup paths~~ — verified met. Baseline as of last audit: `ContentProtector.ts` 88%, `ClipboardStrategy.ts` 61%, `AbstractStrategy.ts` 71%. Remaining gaps in those files (`ContentProtector` lines 74-78/98/107/229/326-329; `ClipboardStrategy` lines 125-143/180-220; `AbstractStrategy` `remove()` paths at 89-90/205-210) are minor and can be picked up opportunistically.
-- [ ] **Broader coverage uplift — in progress.** Overall coverage now at **47% stmts / 32% branch / 44% funcs / 47% lines** (124 tests, up from 40%/28%/37%/42% with 58 tests). Highest-leverage gaps to attack next, ordered by impact-per-test:
+- [ ] **Broader coverage uplift — in progress.** Overall coverage now at **48% stmts / 34% branch / 46% funcs / 49% lines** (155 tests, up from 40%/28%/37%/42% with 58 tests). Highest-leverage gaps to attack next, ordered by impact-per-test:
   1. ~~**`assess.ts` — 2.43%**~~ → **92.68%** ✅ (16 tests; SSR baseline, signal flags, extension detection, risk clamp/rounding, lean spanAttributes)
   2. ~~**`otel.ts` — 0%**~~ → **100%** ✅ (13 tests; every `attachShieldToSpan` handler + emitter-throw isolation)
-  3. **`eventManager.ts` 46%** — still pending (753 lines; needs its own slice). ~~`intervalManager.ts` 37%~~ → **100% lines** ✅, ~~`timeoutManager.ts` 59%~~ → **100% lines** ✅ (28 tests across both).
+  3. ~~**`eventManager.ts` 46%**~~ → **91.62% lines** ✅ (31 tests; document/window/element targets, owner/selector/type queries, conflicts, isolation). ~~`intervalManager.ts` 37%~~ → **100% lines** ✅, ~~`timeoutManager.ts` 59%~~ → **100% lines** ✅ (28 tests across both).
   4. **`ContentProtectionMediator.ts` — 19%** and the 5 event handlers (`devToolsEventHandler` 11%, `extensionEventHandlers` 7%, `iFrameEventHandlers` 17%, `screenShotEventHandlers` 21%, `abstractEventHandler` 63%).
   5. **`protectedContentManager.ts` — 11%**, `keyboardShortcutManager.ts` — 11%.
   6. **Individual DevTools detectors — 0% each** (`sizeDetector`, `timingDetector`, `debuggerDetector`, `dateToStringDetector`, `funcToStringDetector`, `regToStringDetector`, `defineGetterDetector`, plus `devToolsDetectorManager` at 2%). Each detector has browser-specific edges that need careful mocking.
@@ -182,7 +182,7 @@ Full report: `c-level/reports/shield_2026-05-19.md`
   8. **`dom.ts`, `orientation.ts`, `LoggingDelegate.ts` — 0%** (small files).
   9. Bonus consolidation while testing: the 7 utility classes that still construct their own `SimpleLoggingService` (`securityOverlayManager`, `protectedContentManager`, `eventManager`, `intervalManager`, `timeoutManager`, `devToolsDetectorManager`, `ContentProtector`) could be folded into `LoggableComponent`. `securityOverlayManager` is the most obvious — it already has its own `COMPONENT_NAME` + logger setup.
 
-  Suggested next slice: `eventManager.ts` on its own (753 lines, 15 public methods — biggest single-file lift) followed by the mediator/event-handler trio (#4).
+  Suggested next slice: the mediator/event-handler trio (#4) — `ContentProtectionMediator` + the 5 event handlers.
 - [ ] Write "migrating from disable-devtool" guide — captures incumbent's user base via search; name the gap: structured output, OTel, no boolean-only API
 
 ### Strategic (1–3 months)
