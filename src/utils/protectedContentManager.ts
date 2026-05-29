@@ -1,7 +1,7 @@
 import type { MediatorAware, ProtectionMediator } from "../core/mediator/types"
 import { ProtectionEvent, ProtectionEventType } from "../core/mediator/protection-event"
 import { isEventType } from "../core/mediator/eventDataTypes"
-import { SimpleLoggingService } from "../utils/logging/simple/SimpleLoggingService"
+import { LoggableComponent } from "./base/LoggableComponent"
 
 /**
  * Options for the protected content placeholder
@@ -72,13 +72,10 @@ interface StoredContentState {
 /**
  * Utility class to manage protected content by hiding and revealing it
  */
-export class ProtectedContentManager implements MediatorAware {
-  public readonly COMPONENT_NAME = "ProtectedContentManager"
+export class ProtectedContentManager extends LoggableComponent implements MediatorAware {
   private mediator: ProtectionMediator | null = null
   private targetElement: HTMLElement
   private originalContent: string | null = null
-  private debugMode: boolean
-  private logger: SimpleLoggingService
 
   // Track content states by owner
   private contentStates: Map<string, StoredContentState> = new Map()
@@ -100,9 +97,8 @@ export class ProtectedContentManager implements MediatorAware {
    * @param debugMode Enable debug mode for troubleshooting
    */
   constructor(targetElement: HTMLElement, debugMode = false) {
+    super("ProtectedContentManager", debugMode)
     this.targetElement = targetElement
-    this.debugMode = debugMode
-    this.logger = new SimpleLoggingService(this.COMPONENT_NAME, debugMode)
   }
 
   /**
@@ -493,16 +489,6 @@ export class ProtectedContentManager implements MediatorAware {
    */
   public getTargetElement(): HTMLElement {
     return this.targetElement
-  }
-
-  /**
-   * Set debug mode
-   * @param enabled Whether debug mode should be enabled
-   */
-  public setDebugMode(enabled: boolean): void {
-    this.debugMode = enabled
-    this.logger.setDebugMode(enabled)
-    this.logger.log(`Debug mode ${enabled ? "enabled" : "disabled"}`)
   }
 
   /**

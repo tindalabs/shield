@@ -4,7 +4,7 @@ import { isBrowser } from "./environment"
 import { ProtectionEvent, ProtectionEventType } from "../core/mediator/protection-event"
 import { isEventType } from "../core/mediator/eventDataTypes"
 import { eventManager } from "./eventManager"
-import { SimpleLoggingService } from "./logging/simple/SimpleLoggingService"
+import { LoggableComponent } from "./base/LoggableComponent"
 
 /**
  * Options for the security overlay
@@ -151,11 +151,8 @@ interface StoredOverlay {
 /**
  * Utility class to manage security overlays
  */
-export class SecurityOverlayManager implements MediatorAware {
-  public readonly COMPONENT_NAME = "SecurityOverlayManager"
+export class SecurityOverlayManager extends LoggableComponent implements MediatorAware {
   private mediator: ProtectionMediator | null = null
-  private debugMode: boolean
-  private logger: SimpleLoggingService
   private domObserver: DomObserver | null = null
 
   // Main storage for overlays
@@ -174,8 +171,7 @@ export class SecurityOverlayManager implements MediatorAware {
    * @param debugMode Enable debug mode for troubleshooting
    */
   constructor(debugMode = false) {
-    this.debugMode = debugMode
-    this.logger = new SimpleLoggingService(this.COMPONENT_NAME, debugMode)
+    super("SecurityOverlayManager", debugMode)
     this.logger.log("Initialized")
   }
 
@@ -1037,16 +1033,6 @@ export class SecurityOverlayManager implements MediatorAware {
     }
 
     return removedCount
-  }
-
-  /**
-   * Set debug mode
-   * @param enabled Whether debug mode should be enabled
-   */
-  public setDebugMode(enabled: boolean): void {
-    this.debugMode = enabled
-    this.logger.setDebugMode(enabled)
-    this.logger.log(`Debug mode ${enabled ? "enabled" : "disabled"}`)
   }
 
   /**
