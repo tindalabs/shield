@@ -4,7 +4,12 @@ import { PlaceholderOptions } from "@/utils/protectedContentManager"
 import { ExtensionConfig } from "@/types"
 
 /**
- * Interface defining the data structure for each event type
+ * Interface defining the data structure for each event type.
+ *
+ * Keep this in sync with the {@link ProtectionEventType} enum — every value
+ * in the enum should have a matching `[ProtectionEventType.X]: { ... }` entry
+ * here. The trailing index signature catches any drift (and lets ad-hoc
+ * subscribers attach handlers for not-yet-typed events without compile errors).
  */
 export interface EventDataMap {
   [ProtectionEventType.DEVTOOLS_STATE_CHANGE]: {
@@ -72,138 +77,15 @@ export interface EventDataMap {
     reason?: string
   }
 
-  [ProtectionEventType.MEDIATOR_INITIALIZED]: {
-    strategies: string[]
-  }
-
-  [ProtectionEventType.MEDIATOR_DISPOSED]: {
-    reason?: string
-  }
-
-  [ProtectionEventType.KEYBOARD_SHORTCUTS_REQUESTED]: {
-    requestingStrategy: string
-    categories?: string[]
-  }
-
-  [ProtectionEventType.KEYBOARD_SHORTCUTS_PROVIDED]: {
-    providingStrategy: string
-    shortcuts: Array<{
-      id: string
-      keys: string[]
-      description: string
-      category: string
-    }>
-  }
-
-  [ProtectionEventType.KEYBOARD_SHORTCUTS_UPDATED]: {
-    updatingStrategy: string
-    addedShortcuts?: Array<{
-      id: string
-      keys: string[]
-      description: string
-      category: string
-    }>
-    removedShortcutIds?: string[]
-  }
-
-  // Strategy lifecycle events
-  [ProtectionEventType.STRATEGY_APPLIED]: {
-    strategyName: string
-    options?: Record<string, unknown>
-  }
-
-  [ProtectionEventType.STRATEGY_REMOVED]: {
-    strategyName: string
-    reason?: string
-  }
-
-  [ProtectionEventType.STRATEGY_UPDATED]: {
-    strategyName: string
-    changes: Record<string, unknown>
-  }
-
-  // User interaction events
-  [ProtectionEventType.CONTEXT_MENU_ATTEMPT]: {
-    target?: HTMLElement | null
-    prevented: boolean
-  }
-
-  [ProtectionEventType.SELECTION_ATTEMPT]: {
-    target?: HTMLElement | null
-    selectedText?: string
-    prevented: boolean
-  }
-
-  [ProtectionEventType.DRAG_ATTEMPT]: {
-    target?: HTMLElement | null
-    prevented: boolean
-  }
-
-  [ProtectionEventType.KEYBOARD_SHORTCUT_BLOCKED]: {
-    key: string
-    code: string
-    ctrlKey: boolean
-    altKey: boolean
-    shiftKey: boolean
-    metaKey: boolean
-    shortcutId?: string
-    category?: string
-  }
-
-  // Protection events
-  [ProtectionEventType.PRINT_ATTEMPT]: {
-    prevented: boolean
-    reason?: string
-  }
-
-  [ProtectionEventType.FULLSCREEN_CHANGE]: {
-    isFullscreen: boolean
-    prevented: boolean
-    reason?: string
-  }
-
-  [ProtectionEventType.WATERMARK_TAMPERED]: {
-    watermarkId: string
-    tamperedElement?: HTMLElement | null
-    originalContent?: string
-  }
-
-  // Overlay events
   [ProtectionEventType.OVERLAY_RESTORED]: {
     strategyName: string
     overlayType: string
     reason?: string
   }
 
-  // Content/Watermark events
-  [ProtectionEventType.WATERMARK_CREATED]: {
-    watermarkId: string
-    targetElement?: HTMLElement | null
-    options?: Record<string, unknown>
-  }
-
-  [ProtectionEventType.WATERMARK_REMOVED]: {
-    watermarkId: string
+  [ProtectionEventType.STRATEGY_REMOVED]: {
+    strategyName: string
     reason?: string
-  }
-
-  // System events
-  [ProtectionEventType.ERROR_OCCURRED]: {
-    error: Error | string
-    source: string
-    context?: Record<string, unknown>
-  }
-
-  [ProtectionEventType.DEBUG_MESSAGE]: {
-    message: string
-    level: "log" | "warn" | "error" | "info"
-    data?: unknown
-  }
-
-  [ProtectionEventType.CONFIG_UPDATED]: {
-    configKey: string
-    oldValue?: unknown
-    newValue: unknown
   }
 
   // Default fallback for any event types not explicitly defined

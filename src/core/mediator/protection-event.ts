@@ -1,53 +1,38 @@
 import { EventDataMap } from "./eventDataTypes"
 
 /**
- * Types of protection events that can be published and subscribed to
+ * Types of protection events that can be published and subscribed to.
+ *
+ * Only the events listed below are actually wired through the mediator today.
+ * The mediator pattern serves a specific case: a detect-and-react fan-out where
+ * one detection signal needs to coordinate multiple visible reactions (overlay,
+ * content hiding, telemetry). That's why only 4 of the 10 strategies use it —
+ * DevTools, Extension, IFrame, and Screenshot. The other 6 (Clipboard,
+ * Selection, ContextMenu, Keyboard, Print, Watermark) are direct-blocking
+ * strategies where the handler IS the strategy; routing them through the
+ * mediator would add ceremony for no decoupling benefit.
+ *
+ * If you need a NEW event type, add it here AND give it a `[NewType]: { ... }`
+ * entry in {@link EventDataMap}.
  */
 export enum ProtectionEventType {
-  // Strategy lifecycle events
-  STRATEGY_APPLIED = "strategy:applied",
+  // Strategy lifecycle
   STRATEGY_REMOVED = "strategy:removed",
-  STRATEGY_UPDATED = "strategy:updated",
 
-  // User interaction events
-  CONTEXT_MENU_ATTEMPT = "interaction:contextmenu",
-  SELECTION_ATTEMPT = "interaction:selection",
-  DRAG_ATTEMPT = "interaction:drag",
-  KEYBOARD_SHORTCUT_BLOCKED = "interaction:keyboard",
-
-  // Protection events
-  PRINT_ATTEMPT = "protection:print",
-  SCREENSHOT_ATTEMPT = "protection:screenshot",
+  // Detection signals (published by the detect-and-react strategies)
   DEVTOOLS_STATE_CHANGE = "protection:devtools",
   EXTENSION_DETECTED = "protection:extension",
   FRAME_EMBEDDING_DETECTED = "protection:frame",
-  FULLSCREEN_CHANGE = "protection:fullscreen",
-  WATERMARK_TAMPERED = "protection:watermark_tampered",
+  SCREENSHOT_ATTEMPT = "protection:screenshot",
 
-  // Overlay events
+  // Overlay coordination
   OVERLAY_SHOWN = "overlay:shown",
   OVERLAY_REMOVED = "overlay:removed",
   OVERLAY_RESTORED = "overlay:restored",
 
-  // Content events
+  // Content coordination
   CONTENT_HIDDEN = "content:hidden",
   CONTENT_RESTORED = "content:restored",
-  WATERMARK_CREATED = "content:watermark_created",
-  WATERMARK_REMOVED = "content:watermark_removed",
-
-  // Mediator events
-  MEDIATOR_INITIALIZED = "mediator:initialized",
-  MEDIATOR_DISPOSED = "mediator:disposed",
-
-  // System events
-  ERROR_OCCURRED = "system:error",
-  DEBUG_MESSAGE = "system:debug",
-  CONFIG_UPDATED = "system:config_updated",
-
-  // Keyboard 
-  KEYBOARD_SHORTCUTS_REQUESTED = "keyboard:shortcuts_requested",
-  KEYBOARD_SHORTCUTS_PROVIDED = "keyboard:shortcuts_provided",
-  KEYBOARD_SHORTCUTS_UPDATED = "keyboard:shortcuts_updated",
 }
 
 /**
@@ -106,15 +91,3 @@ export interface FrameEmbeddingEvent extends ProtectionEvent {
   type: ProtectionEventType.FRAME_EMBEDDING_DETECTED
   data: EventDataMap[ProtectionEventType.FRAME_EMBEDDING_DETECTED]
 }
-
-/**
- * Event for watermark-related events
- */
-export interface WatermarkEvent extends ProtectionEvent {
-  data: {
-    targetElement?: HTMLElement | null
-    watermarkId?: string
-    [key: string]: unknown
-  }
-}
-
