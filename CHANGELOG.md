@@ -10,6 +10,9 @@ These changes don't ship in `dist/` — they affect the dev tree, CI infra, and
 internal architecture only. No version bump warranted until a consumer-visible
 change lands; rolled up into the next release notes when it does.
 
+### Changed
+- **`engines.node` pinned to `>=20.0.0`** in `package.json`. Matches what CI tests against; pre-empts the `EBADENGINE` warning that dev-dep updates have started emitting on Node 18 and below. Mild consumer-facing change (npm warns at install time on older Node) — wouldn't justify a version bump on its own, but worth flagging in the next release notes.
+
 ### Internal
 - **LoggableComponent consolidation** ([54306c8], [67a3e7c], [584840a]): folded 7 utility classes (`TimeoutManager`, `IntervalManager`, `EventManager`, `SecurityOverlayManager`, `ProtectedContentManager`, `DevToolsDetectorManager`, `ContentProtector`) into the `LoggableComponent` base. ~80 lines of duplicated logger plumbing removed; behavioral parity preserved.
 - **Pruned aspirational `ProtectionEventType` enum** ([af9f270]): dropped 19 unused event types and matching `EventDataMap` entries that nothing publishes. Enum is now 10 entries — exactly what flows through the mediator today. Header doc explains the detect-and-react vs direct-blocking architectural asymmetry.
