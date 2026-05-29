@@ -195,16 +195,42 @@ describe('ProtectedContentManager', () => {
       })
 
       expect(target.textContent).toContain('HIGH')
-      // Both states live in storage; only the high-priority one is visible.
+      // Both states live in storage; only the high-priority one is visible,
+      // and the displaced LOW state is in the queue so it can resurface when
+      // HIGH is dismissed (re-queue fix; mirrors SecurityOverlayManager).
       const info = mgr.getDebugInfo()
       expect(info.totalStates).toBe(2)
-      // NOTE: the displaced LOW state is currently orphaned by the supersession
-      // path — it stays in `contentStates` but is neither active nor queued, so
-      // dismissing HIGH will restore the original content rather than fall back
-      // to LOW. Same shape as the SecurityOverlayManager re-queue bug; see the
-      // matching ROADMAP follow-up. Once that's fixed, the assertion below
-      // should become `>= 1` and a sibling test should cover the fallback.
-      expect(info.queueLength).toBe(0)
+      expect(info.queueLength).toBe(1)
+    })
+
+    it('dismissing the higher-priority state falls back to the displaced lower-priority one', () => {
+      const mediator = new ContentProtectionMediator(false)
+      mgr.setMediator(mediator)
+
+      // Register LOW then HIGH (supersession path).
+      mediator.publish({
+        type: ProtectionEventType.CONTENT_HIDDEN,
+        source: 'A',
+        timestamp: Date.now(),
+        data: { strategyName: 'A', reason: 'low',  options: { title: 'LOW'  }, priority: 1 },
+      })
+      mediator.publish({
+        type: ProtectionEventType.CONTENT_HIDDEN,
+        source: 'B',
+        timestamp: Date.now(),
+        data: { strategyName: 'B', reason: 'high', options: { title: 'HIGH' }, priority: 10 },
+      })
+      expect(target.textContent).toContain('HIGH')
+
+      // Dismiss HIGH — LOW should re-emerge from the queue.
+      mediator.publish({
+        type: ProtectionEventType.CONTENT_RESTORED,
+        source: 'B',
+        timestamp: Date.now(),
+        data: { strategyName: 'B' },
+      })
+      expect(target.textContent).toContain('LOW')
+      expect(mgr.isContentHidden()).toBe(true)
     })
 
     it('lower-priority state goes to the queue and reappears after the active one is dismissed', () => {

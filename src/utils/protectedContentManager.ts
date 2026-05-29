@@ -219,6 +219,15 @@ export class ProtectedContentManager implements MediatorAware {
       if (activeState && newState && newState.priority > activeState.priority) {
         this.logger.log("New state has higher priority, replacing active state")
 
+        // Re-queue the displaced active state BEFORE applying the new one,
+        // so it can resurface when the new (higher-priority) state is
+        // dismissed. Without this step the displaced state is orphaned —
+        // it stays in `contentStates` but is neither active nor queued,
+        // so the dismiss path falls back to the original content instead
+        // of returning to the displaced protection. Mirrors the
+        // SecurityOverlayManager re-queue fix in commit 4d14467.
+        this.addToQueue(this.activeStateId)
+
         // Apply the new state
         this.applyContentStateById(stateId)
       }
