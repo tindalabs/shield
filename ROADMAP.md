@@ -166,9 +166,9 @@ Full report: `c-level/reports/shield_2026-05-19.md`
 ### Next Sprint (1–4 weeks)
 
 - [ ] Move `attachShieldToSpan()` example to main README with "Zero runtime dependencies" as first badge — OTel composability is Shield's strongest differentiator and is currently buried in `REFERENCE.md`
-- [ ] Add README badges (npm version, CI status, coverage, MIT license)
-- [ ] Add CONTRIBUTING.md (done ✅) + PR template (`.github/PULL_REQUEST_TEMPLATE.md` — still missing)
-- [ ] Add `.github/dependabot.yml` for monthly dev-dep updates
+- [x] Add README badges (npm version, CI status, MIT license, zero-runtime-deps) ✅ — coverage badge skipped: no coverage service is wired into CI yet (Codecov/Coveralls would need configuring). Worth adding once that's set up.
+- [x] Add CONTRIBUTING.md (done ✅) + PR template ✅ at `.github/PULL_REQUEST_TEMPLATE.md`
+- [x] Add `.github/dependabot.yml` for monthly dev-dep updates ✅ — npm (grouped minor/patch into one PR per cycle) + github-actions, both monthly.
 - [x] ~~Increase test coverage to 60%+ on `ContentProtector`, `ClipboardStrategy`, and all `AbstractStrategy.remove()` / cleanup paths~~ — verified met. Baseline as of last audit: `ContentProtector.ts` 88%, `ClipboardStrategy.ts` 61%, `AbstractStrategy.ts` 71%. Remaining gaps in those files (`ContentProtector` lines 74-78/98/107/229/326-329; `ClipboardStrategy` lines 125-143/180-220; `AbstractStrategy` `remove()` paths at 89-90/205-210) are minor and can be picked up opportunistically.
 - [ ] **Broader coverage uplift — in progress.** Overall coverage now at **76% stmts / 61% branch / 83% funcs / 78% lines** (372 tests, up from 40%/28%/37%/42% with 58 tests). Highest-leverage gaps to attack next, ordered by impact-per-test:
   1. ~~**`assess.ts` — 2.43%**~~ → **92.68%** ✅ (16 tests; SSR baseline, signal flags, extension detection, risk clamp/rounding, lean spanAttributes)
@@ -187,7 +187,7 @@ Full report: `c-level/reports/shield_2026-05-19.md`
 
   All numbered coverage items are now ✅. Remaining gaps are long-tail branches (DOM-observer paths in `ContextMenuStrategy`, configPath fetch + fallback in `ExtensionStrategy`, fallback `setInterval` paths). Marginal cost-per-pp is high; ~78% is a reasonable "done" point.
 
-  Suggested next: distribution polish (README badges, PR template, dependabot) becomes the gating work for v0.1.0.
+  Distribution polish ✅ done. Remaining gating work for v0.1.0: tag and push `v0.1.0` (line 164) — that triggers `publish.yml` and makes `npm install @tindalabs/shield` work. The "move `attachShieldToSpan()` example to main README" item also still open.
 - [ ] Write "migrating from disable-devtool" guide — captures incumbent's user base via search; name the gap: structured output, OTel, no boolean-only API
 - [x] ~~**`ProtectedContentManager` priority-supersession orphan bug.**~~ ✅ Fixed: the displaced active state is now re-queued before the higher-priority replacement is applied, mirroring the SecurityOverlayManager re-queue fix in 4d14467. Pinned test inverted to assert the correct fallback behaviour, plus a new test covering the dismiss-and-resurface flow.
 - [x] ~~**Prune the aspirational `ProtectionEventType` enum**~~ ✅ Done. Dropped 19 unused event types from the enum and their matching `EventDataMap` entries: `STRATEGY_APPLIED/UPDATED`, `SELECTION_ATTEMPT`, `CONTEXT_MENU_ATTEMPT`, `KEYBOARD_SHORTCUT_BLOCKED`, `PRINT_ATTEMPT`, `DRAG_ATTEMPT`, `WATERMARK_TAMPERED/CREATED/REMOVED`, `FULLSCREEN_CHANGE`, `MEDIATOR_INITIALIZED/DISPOSED`, `ERROR_OCCURRED`, `DEBUG_MESSAGE`, `CONFIG_UPDATED`, `KEYBOARD_SHORTCUTS_REQUESTED/PROVIDED/UPDATED`. Also removed the unused `WatermarkEvent` interface. The enum is now 10 entries — exactly what's wired through the mediator today — and the file carries a header explaining the detect-and-react fan-out vs direct-blocking asymmetry. All 372 tests still green.

@@ -1,0 +1,40 @@
+# Dependabot configuration — keeps dev dependencies fresh without flooding
+# the queue. Runtime deps are minimal (zero in @tindalabs/shield itself); the
+# noise here would come from the dev/test toolchain (jest, ts-jest, eslint).
+#
+# Schedule: monthly. The frequency matches a library at this maturity level —
+# weekly is overkill for dev-only updates and creates review fatigue.
+# https://docs.github.com/en/code-security/dependabot/dependabot-version-updates
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    open-pull-requests-limit: 5
+    # Group all non-major dev-dep bumps into a single PR per cycle.
+    groups:
+      dev-dependencies:
+        patterns:
+          - "*"
+        update-types:
+          - "minor"
+          - "patch"
+    # Major version bumps still come through as individual PRs so they get a
+    # proper review.
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "monthly"
+    commit-message:
+      prefix: "chore(ci)"
+    labels:
+      - "dependencies"
+      - "ci"

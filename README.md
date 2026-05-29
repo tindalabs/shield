@@ -1,5 +1,10 @@
 # @tindalabs/shield
 
+[![npm version](https://img.shields.io/npm/v/@tindalabs/shield.svg)](https://www.npmjs.com/package/@tindalabs/shield)
+[![CI](https://github.com/tindalabs/shield/actions/workflows/ci.yml/badge.svg)](https://github.com/tindalabs/shield/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Zero runtime dependencies](https://img.shields.io/badge/runtime%20deps-0-brightgreen.svg)](./package.json)
+
 **Browser tamper detection for hostile environments.**
 
 Shield detects DevTools, automation drivers, extension injection, and environment spoofing — surfaces findings as structured risk signals composable with [Blindspot](https://github.com/tindalabs/blindspot) spans and [Scent](https://github.com/tindalabs/scent) identity risk scoring.
