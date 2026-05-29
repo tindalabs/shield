@@ -17,13 +17,13 @@ import { eventManager } from "../utils/eventManager"
 import { ContentProtectionMediator } from "./mediator/ContentProtectionMediator"
 import { HandlerRegistry } from "./mediator/handlers/eventHandlerRegistry"
 import { ProtectedContentManager } from "../utils/protectedContentManager"
-import { SimpleLoggingService } from "../utils/logging/simple/SimpleLoggingService"
+import { LoggableComponent } from "../utils/base/LoggableComponent"
 
 /**
  * Main class for protecting content from copying, screenshotting, and other extraction methods
  * Coordinates multiple protection strategies and manages their lifecycle
  */
-export class ContentProtector {
+export class ContentProtector extends LoggableComponent {
   private options: ContentProtectionOptions
   private strategies: Map<string, ProtectionStrategy> = new Map()
   private isActive = false
@@ -31,7 +31,6 @@ export class ContentProtector {
   private protectedContentManager: ProtectedContentManager
   private mediator: ContentProtectionMediator
   private handlerRegistry: HandlerRegistry
-  private logger: SimpleLoggingService
 
   /**
    * Create a new ContentProtector instance
@@ -53,14 +52,11 @@ export class ContentProtector {
       debugMode: false,
     }
 
-    // Merge defaults with provided options
-    this.options = {
-      ...defaults,
-      ...options,
-    }
-
-    // Initialize logger
-    this.logger = new SimpleLoggingService("ContentProtector", this.options.debugMode)
+    // Merge defaults with provided options. We compute this before super()
+    // because super() needs the resolved debugMode flag.
+    const mergedOptions = { ...defaults, ...options }
+    super("ContentProtector", !!mergedOptions.debugMode)
+    this.options = mergedOptions
 
     // Normalize and set targetElement if not provided
     const resolveTargetElement = (t: unknown): HTMLElement | null => {
@@ -101,8 +97,7 @@ export class ContentProtector {
     } else {
       // If user provided something invalid, clear it to avoid passing non-DOM objects to strategies
       if (this.options.targetElement) {
-        this.logger = new SimpleLoggingService("ContentProtector", this.options.debugMode)
-        this.logger.warn("Provided targetElement is not a DOM element - falling back to document.body if available")
+        this.warn("Provided targetElement is not a DOM element - falling back to document.body if available")
         if (typeof document !== "undefined") this.options.targetElement = document.body
         else this.options.targetElement = undefined
       }

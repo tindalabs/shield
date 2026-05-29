@@ -8,7 +8,6 @@ import { DefineGetterDetector } from "./defineGetterDetector"
 import { DebugLibDetector } from "./debugLibDetector"
 import { SizeDetector } from "./sizeDetector"
 import { getBrowser, isMobile } from "../environment"
-import { SimpleLoggingService } from "../logging/simple/SimpleLoggingService"
 import { AbstractDevToolsDetector } from "./AbstractDevToolsDetector"
 
 /**
@@ -129,9 +128,7 @@ export class DevToolsDetectorManager extends AbstractDevToolsDetector {
    * @param options Configuration options
    */
   constructor(options: DetectorManagerOptions = {}) {
-    super('DevToolsDetectorManager')
-    const debugMode = !!options.debugMode
-    this.logger = new SimpleLoggingService("DevToolsDetectorManager", debugMode)
+    super('DevToolsDetectorManager', { debugMode: !!options.debugMode })
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     this.onDevToolsChange = options.onDevToolsChange || ((isOpen: boolean): void => {})
