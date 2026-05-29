@@ -1,5 +1,5 @@
 import { isBrowser } from "./environment"
-import { SimpleLoggingService } from "./logging/simple/SimpleLoggingService"
+import { LoggableComponent } from "./base/LoggableComponent"
 
 /**
  * Options for event registration
@@ -63,7 +63,7 @@ type TargetId = string | symbol
  * It provides a unified API for registering and removing event listeners
  * and ensures proper cleanup when strategies are removed
  */
-export class EventManager {
+export class EventManager extends LoggableComponent {
   private static instance: EventManager | null = null
 
   // Main storage: Map<TargetId, Map<EventId, StoredEvent>>
@@ -76,14 +76,12 @@ export class EventManager {
   private readonly DOCUMENT_SYMBOL = Symbol("document")
   private readonly WINDOW_SYMBOL = Symbol("window")
 
-  private logger: SimpleLoggingService
-
   /**
    * Create a new EventManager
    * @param debugMode Enable debug mode for troubleshooting
    */
   private constructor(debugMode = false) {
-    this.logger = new SimpleLoggingService("EventManager", debugMode)
+    super("EventManager", debugMode)
     this.logger.log("Initialized")
   }
 
@@ -464,15 +462,6 @@ export class EventManager {
       `Cannot retrieve target for ID ${String(targetId)}. This is a limitation for element-specific events.`
     )
     return null
-  }
-
-  /**
-   * Set debug mode
-   * @param enabled Whether debug mode should be enabled
-   */
-  public setDebugMode(enabled: boolean): void {
-    this.logger.setDebugMode(enabled)
-    this.logger.log(`Debug mode ${enabled ? "enabled" : "disabled"}`)
   }
 
   /**

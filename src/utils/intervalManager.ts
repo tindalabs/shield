@@ -1,5 +1,5 @@
 import { isBrowser } from "./environment"
-import { SimpleLoggingService } from "./logging/simple/SimpleLoggingService"
+import { LoggableComponent } from "./base/LoggableComponent"
 
 export type IntervalTask = {
   id: string
@@ -13,19 +13,18 @@ export type IntervalTask = {
  * Manages periodic tasks for the content protection toolkit
  * Consolidates multiple interval timers into a single efficient timer
  */
-export class IntervalManager {
+export class IntervalManager extends LoggableComponent {
   private tasks: Map<string, IntervalTask> = new Map()
   private intervalId: number | null = null
   private intervalFrequency = 500 // Base interval in ms (2 checks per second)
   private isRunning = false
-  private logger: SimpleLoggingService
 
   /**
    * Create a new IntervalManager
    * @param debugMode Enable debug mode for troubleshooting
    */
   constructor(debugMode = false) {
-    this.logger = new SimpleLoggingService("IntervalManager", debugMode)
+    super("IntervalManager", debugMode)
     this.logger.log("Initialized")
   }
 
@@ -270,14 +269,6 @@ export class IntervalManager {
     this.logger.log(`Updated interval frequency to ${frequency}ms`)
   }
 
-  /**
-   * Set debug mode
-   * @param enabled Whether debug mode should be enabled
-   */
-  public setDebugMode(enabled: boolean): void {
-    this.logger.setDebugMode(enabled)
-    this.logger.log(`Debug mode ${enabled ? "enabled" : "disabled"}`)
-  }
 }
 
 /**

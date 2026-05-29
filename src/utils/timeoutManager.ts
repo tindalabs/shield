@@ -1,21 +1,20 @@
 import { isBrowser } from "./environment"
-import { SimpleLoggingService } from "./logging/simple/SimpleLoggingService"
+import { LoggableComponent } from "./base/LoggableComponent"
 
 /**
  * Manages timeouts for the content protection toolkit
  * Provides a centralized way to create, track, and clear timeouts
  */
-export class TimeoutManager {
+export class TimeoutManager extends LoggableComponent {
   private static instance: TimeoutManager | null = null
   private timeouts: Map<string, number> = new Map()
-  private logger: SimpleLoggingService
 
   /**
    * Create a new TimeoutManager
    * @param debugMode Enable debug mode for troubleshooting
    */
   private constructor(debugMode = false) {
-    this.logger = new SimpleLoggingService("TimeoutManager", debugMode)
+    super("TimeoutManager", debugMode)
     this.logger.log("Initialized")
   }
 
@@ -130,14 +129,6 @@ export class TimeoutManager {
     return this.timeouts.size
   }
 
-  /**
-   * Set debug mode
-   * @param enabled Whether debug mode should be enabled
-   */
-  public setDebugMode(enabled: boolean): void {
-    this.logger.setDebugMode(enabled)
-    this.logger.log(`Debug mode ${enabled ? "enabled" : "disabled"}`)
-  }
 }
 
 // Create a singleton instance for use throughout the application
