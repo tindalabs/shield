@@ -87,4 +87,146 @@ describe('FrameEmbeddingProtectionStrategy', () => {
 
     strategy.remove()
   })
+
+  it('treats cross-origin parent access exceptions as external frame', () => {
+    const mediator: ProtectionMediator = {
+      publish: jest.fn(),
+      subscribe: jest.fn(() => ''),
+      unsubscribe: jest.fn(() => true),
+      getSubscriptions: jest.fn(() => []),
+      setDebugMode: jest.fn(),
+    }
+
+    // window.parent.location throws → cross-origin path; window.top !== window
+    // simulated via separate object.
+    const throwingParent = {
+      get location() { throw new Error('cross-origin') },
+    } as unknown as Window
+    Object.defineProperty(window, 'top', { value: {} as Window, configurable: true })
+    Object.defineProperty(window, 'parent', { value: throwingParent, configurable: true })
+
+    const strategy = new FrameEmbeddingProtectionStrategy(
+      { allowedDomains: [] } as FrameEmbeddingOptions,
+      document.body,
+      undefined,
+      false,
+    )
+    strategy.setMediator(mediator)
+    strategy.apply()
+
+    expect(mediator.publish).toHaveBeenCalled()
+    const ev = (mediator.publish as jest.Mock).mock.calls[0][0] as FrameEmbeddingEvent
+    expect(ev.data.isExternalFrame).toBe(true)
+    expect(ev.data.parentDomain).toBeUndefined()
+    strategy.remove()
+  })
+
+  it('blockAllFrames=true treats even same-origin frames as external', () => {
+    const mediator: ProtectionMediator = {
+      publish: jest.fn(),
+      subscribe: jest.fn(() => ''),
+      unsubscribe: jest.fn(() => true),
+      getSubscriptions: jest.fn(() => []),
+      setDebugMode: jest.fn(),
+    }
+
+    type FakeWindowLike = { location: { hostname: string } }
+    const sameOriginParent: FakeWindowLike = { location: { hostname: 'example.com' } }
+    Object.defineProperty(window, 'top', { value: sameOriginParent as unknown as Window, configurable: true })
+    Object.defineProperty(window, 'parent', { value: sameOriginParent as unknown as Window, configurable: true })
+    Object.defineProperty(window, 'location', { value: { hostname: 'example.com' }, configurable: true })
+
+    const strategy = new FrameEmbeddingProtectionStrategy(
+      { blockAllFrames: true, allowedDomains: [] } as FrameEmbeddingOptions,
+      document.body,
+      undefined,
+      false,
+    )
+    strategy.setMediator(mediator)
+    strategy.apply()
+
+    expect(mediator.publish).toHaveBeenCalled()
+    strategy.remove()
+  })
+
+  describe('apply / remove lifecycle', () => {
+    it('apply is idempotent', () => {
+      const strategy = new FrameEmbeddingProtectionStrategy({} as FrameEmbeddingOptions, document.body)
+      strategy.apply()
+      expect(() => strategy.apply()).not.toThrow()
+      strategy.remove()
+    })
+
+    it('remove without apply is safe', () => {
+      const strategy = new FrameEmbeddingProtectionStrategy({} as FrameEmbeddingOptions, document.body)
+      expect(() => strategy.remove()).not.toThrow()
+    })
+
+    it('remove publishes STRATEGY_REMOVED when mediator is attached', () => {
+      const mediator: ProtectionMediator = {
+        publish: jest.fn(),
+        subscribe: jest.fn(() => ''),
+        unsubscribe: jest.fn(() => true),
+        getSubscriptions: jest.fn(() => []),
+        setDebugMode: jest.fn(),
+      }
+      const strategy = new FrameEmbeddingProtectionStrategy({} as FrameEmbeddingOptions, document.body)
+      strategy.setMediator(mediator)
+      strategy.apply()
+      ;(mediator.publish as jest.Mock).mockClear()
+      strategy.remove()
+
+      const types = (mediator.publish as jest.Mock).mock.calls.map(
+        (c) => (c[0] as { type: ProtectionEventType }).type,
+      )
+      expect(types).toContain(ProtectionEventType.STRATEGY_REMOVED)
+    })
+  })
+
+  describe('updateOptions + setDebugMode', () => {
+    it('rejects null options without throwing', () => {
+      const strategy = new FrameEmbeddingProtectionStrategy({} as FrameEmbeddingOptions, document.body)
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      expect(() => strategy.updateOptions(null as any)).not.toThrow()
+      strategy.remove()
+    })
+
+    it('republishes when critical options change while embedded externally', () => {
+      const mediator: ProtectionMediator = {
+        publish: jest.fn(),
+        subscribe: jest.fn(() => ''),
+        unsubscribe: jest.fn(() => true),
+        getSubscriptions: jest.fn(() => []),
+        setDebugMode: jest.fn(),
+      }
+
+      type FakeWindowLike = { location: { hostname: string } }
+      const fakeParent: FakeWindowLike = { location: { hostname: 'evil.com' } }
+      Object.defineProperty(window, 'top', { value: fakeParent as unknown as Window, configurable: true })
+      Object.defineProperty(window, 'parent', { value: fakeParent as unknown as Window, configurable: true })
+      Object.defineProperty(window, 'location', { value: { hostname: 'example.com' }, configurable: true })
+
+      const strategy = new FrameEmbeddingProtectionStrategy(
+        { allowedDomains: [], blockAllFrames: false } as FrameEmbeddingOptions,
+        document.body,
+        undefined,
+        false,
+      )
+      strategy.setMediator(mediator)
+      strategy.apply()
+      ;(mediator.publish as jest.Mock).mockClear()
+
+      // Toggle blockAllFrames — critical option, should re-publish.
+      strategy.updateOptions({ blockAllFrames: true })
+      expect(mediator.publish).toHaveBeenCalled()
+      strategy.remove()
+    })
+
+    it('setDebugMode does not throw', () => {
+      const strategy = new FrameEmbeddingProtectionStrategy({} as FrameEmbeddingOptions, document.body)
+      expect(() => strategy.setDebugMode(true)).not.toThrow()
+      expect(() => strategy.setDebugMode(false)).not.toThrow()
+      strategy.remove()
+    })
+  })
 })
