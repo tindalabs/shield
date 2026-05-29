@@ -165,7 +165,7 @@ Full report: `c-level/reports/shield_2026-05-19.md`
 
 ### Next Sprint (1–4 weeks)
 
-- [ ] Move `attachShieldToSpan()` example to main README with "Zero runtime dependencies" as first badge — OTel composability is Shield's strongest differentiator and is currently buried in `REFERENCE.md`
+- [x] Move `attachShieldToSpan()` example to main README ✅ — new top-level section "OTel-instrumented protection" right after `ContentProtector`, with quick-start example, Blindspot integration variant, and the full table of emitted span events + attributes. (The "Zero runtime dependencies" badge already shipped in the badges commit above.)
 - [x] Add README badges (npm version, CI status, MIT license, zero-runtime-deps) ✅ — coverage badge skipped: no coverage service is wired into CI yet (Codecov/Coveralls would need configuring). Worth adding once that's set up.
 - [x] Add CONTRIBUTING.md (done ✅) + PR template ✅ at `.github/PULL_REQUEST_TEMPLATE.md`
 - [x] Add `.github/dependabot.yml` for monthly dev-dep updates ✅ — npm (grouped minor/patch into one PR per cycle) + github-actions, both monthly.
@@ -187,7 +187,7 @@ Full report: `c-level/reports/shield_2026-05-19.md`
 
   All numbered coverage items are now ✅. Remaining gaps are long-tail branches (DOM-observer paths in `ContextMenuStrategy`, configPath fetch + fallback in `ExtensionStrategy`, fallback `setInterval` paths). Marginal cost-per-pp is high; ~78% is a reasonable "done" point.
 
-  Distribution polish ✅ done. Remaining gating work for v0.1.0: tag and push `v0.1.0` (line 164) — that triggers `publish.yml` and makes `npm install @tindalabs/shield` work. The "move `attachShieldToSpan()` example to main README" item also still open.
+  Distribution polish ✅ done. Only remaining gating work for v0.1.0: tag and push `v0.1.0` (line 164) — that triggers `publish.yml` and makes `npm install @tindalabs/shield` work.
 - [ ] Write "migrating from disable-devtool" guide — captures incumbent's user base via search; name the gap: structured output, OTel, no boolean-only API
 - [x] ~~**`ProtectedContentManager` priority-supersession orphan bug.**~~ ✅ Fixed: the displaced active state is now re-queued before the higher-priority replacement is applied, mirroring the SecurityOverlayManager re-queue fix in 4d14467. Pinned test inverted to assert the correct fallback behaviour, plus a new test covering the dismiss-and-resurface flow.
 - [x] ~~**Prune the aspirational `ProtectionEventType` enum**~~ ✅ Done. Dropped 19 unused event types from the enum and their matching `EventDataMap` entries: `STRATEGY_APPLIED/UPDATED`, `SELECTION_ATTEMPT`, `CONTEXT_MENU_ATTEMPT`, `KEYBOARD_SHORTCUT_BLOCKED`, `PRINT_ATTEMPT`, `DRAG_ATTEMPT`, `WATERMARK_TAMPERED/CREATED/REMOVED`, `FULLSCREEN_CHANGE`, `MEDIATOR_INITIALIZED/DISPOSED`, `ERROR_OCCURRED`, `DEBUG_MESSAGE`, `CONFIG_UPDATED`, `KEYBOARD_SHORTCUTS_REQUESTED/PROVIDED/UPDATED`. Also removed the unused `WatermarkEvent` interface. The enum is now 10 entries — exactly what's wired through the mediator today — and the file carries a header explaining the detect-and-react fan-out vs direct-blocking asymmetry. All 372 tests still green.

@@ -267,6 +267,64 @@ See [REFERENCE.md](./REFERENCE.md) for the full `ContentProtector` API and all s
 
 ---
 
+## OTel-instrumented protection — `attachShieldToSpan()`
+
+`attachShieldToSpan()` is a thin wrapper around `ContentProtector` that turns every protection event into a span event. Each blocked copy, print, keyboard shortcut, devtools open, or screenshot attempt becomes a `shield.*` event in your tracing pipeline — no manual callback wiring per strategy.
+
+Shield is framework-agnostic about OTel — it doesn't depend on `@opentelemetry/api`. You provide a `SpanEmitter` callback; Shield calls it.
+
+```ts
+import { attachShieldToSpan } from '@tindalabs/shield';
+
+const protector = attachShieldToSpan(
+  { preventClipboard: true, enableWatermark: true, watermarkOptions: { text: 'Confidential' } },
+  (name, attrs) => span.addEvent(name, attrs),
+);
+
+protector.protect();
+```
+
+### With Blindspot
+
+```ts
+import { attachShieldToSpan } from '@tindalabs/shield';
+import { getTracer, getRouteContext } from '@tindalabs/blindspot';
+
+const protector = attachShieldToSpan(
+  { preventClipboard: true, preventScreenshots: true },
+  (name, attrs) => {
+    const span = getTracer().startSpan(name, { attributes: attrs }, getRouteContext());
+    span.end();
+  },
+);
+
+protector.protect();
+```
+
+Emitting each event as a short-lived span (start + immediately end) means findings reach Tempo/Honeycomb/Jaeger without waiting for the long-lived navigation span to close.
+
+### Events emitted
+
+| Event name | Fires when | Attributes |
+|---|---|---|
+| `shield.devtools.opened` / `shield.devtools.closed` | DevTools state changes | — |
+| `shield.selection.attempted` | User tries to select content | — |
+| `shield.context_menu.attempted` | Right-click / long-press | — |
+| `shield.print.attempted` | Print dialog opens | — |
+| `shield.keyboard_shortcut.blocked` | Blocked shortcut fires | `shield.keyboard.key`, `shield.keyboard.code` |
+| `shield.clipboard.copy` / `.cut` / `.paste` | Clipboard action attempted | — |
+| `shield.screenshot.attempted` | PrintScreen / Win+Shift+S / Cmd+Shift+3/4/5 | — |
+| `shield.extension.detected` | Known scraping extension found | `shield.extension.id`, `shield.extension.name`, `shield.extension.risk` |
+| `shield.frame.embedding.detected` | Page rendered inside an iframe | `shield.frame.external` |
+| `shield.protection.bypassed` | A protection strategy was circumvented | `shield.bypass.method` |
+| `shield.content.hidden` / `.restored` | Protected content toggled | `shield.hidden.reason` (hidden only) |
+
+Emitter exceptions are swallowed — telemetry sink failure never crashes the protected page. Any `customHandlers` you also pass in `options` still get called after the emit.
+
+Pair with `assess()` for an end-to-end picture: route-level risk score plus per-interaction protection events, all keyed off the same span.
+
+---
+
 ## Demo
 
 A local demo app is included at [`demo/`](./demo). It exercises both APIs in a dark-themed single-page app:
