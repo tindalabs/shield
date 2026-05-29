@@ -46,7 +46,7 @@
   },
   "description": "Browser tamper detection for hostile environments. Detects DevTools, automation drivers, extension injection, and environment spoofing — surfaces findings as structured risk signals, not just boolean flags.",
   "devDependencies": {
-    "@eslint/js": "^9.22.0",
+    "@eslint/js": "^10.0.1",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.13.10",
     "eslint": "^9.22.0",
