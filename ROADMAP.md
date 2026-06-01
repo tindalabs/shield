@@ -161,7 +161,7 @@ Full report: `c-level/reports/shield_2026-05-19.md`
 - [x] Fix `BrowserExtensionOptions.showOverlay: true` → `showOverlay?: boolean` in `src/types/index.ts:203` — compile-breaking for any consumer of extension detection
 - [x] Add `coverage/` to `.gitignore` — generated output should not be in version control
 - [x] Add `SECURITY.md` with maintainer contact and responsible disclosure path (90-day timeline)
-- [ ] Tag `v0.1.0` and push — triggers `publish.yml`; makes `npm install @tindalabs/shield` work
+- [x] Tag `v0.1.0` and push ✅ — tag exists locally; `publish.yml` is wired to trigger on tag push. Verify the npm publish actually resolved (`npm view @tindalabs/shield`) — see follow-up in the 2026-05-29 backlog.
 
 ### Next Sprint (1–4 weeks)
 
@@ -205,3 +205,45 @@ Full report: `c-level/reports/shield_2026-05-19.md`
 - **Chrome/Safari DevTools heuristics** — major browser updates break timing-based detection; monitor `disable-devtool` GitHub issues for breakage reports as a leading indicator (same heuristics apply to Shield)
 - **Clipboard API permission changes** — Chrome has been restricting programmatic clipboard access; monitor Web Capabilities Working Group for changes affecting `ClipboardStrategy`
 - **`@fingerprintjs/botd` feature expansion** — if Fingerprint adds active content protection features, Shield's positioning narrows; monitor their changelog
+
+---
+
+## Advisory Backlog — 2026-05-29
+
+Findings from the second full C-level assessment (CTO / CPO / COO / CMO / CFO / CSO + competitive research).
+Overall score: **7.7/10** (up from 6.3 — every internal gap from the May 19 round is closed; remaining work is non-technical).
+Full report: `c-level/reports/shield_2026-05-29.md`
+
+The cross-cutting finding: the product is built, distribution is the bottleneck, and detection claims need real-browser verification before being marketed aggressively.
+
+### Immediate (this week)
+
+- [ ] **Verify v0.1.0 is live on npm.** Confirm `npm install @tindalabs/shield` resolves and `npm view @tindalabs/shield version` returns `0.1.0`. Until this is true, every marketing claim is unverifiable.
+- [ ] **Enable npm publish provenance + 2FA on the publishing account.** Pass `--provenance` in `publish.yml` (or rely on the workflow's default if already set) and turn on `auth-and-writes` 2FA in npm. Closes the worst-case supply-chain scenario (compromised npm credentials → malicious patch in every consumer browser).
+- [ ] **Cut a real `[0.1.0]` CHANGELOG section.** `CHANGELOG.md` currently has only `[Unreleased]`; the tag is invisible to changelog readers. Capture: policy engine (`assessAndProtect`), OTel emission (`attachShieldToSpan`), ClipboardStrategy integration, `LoggableComponent` consolidation, zero runtime deps.
+- [ ] **Add CodeQL workflow** at `.github/workflows/codeql.yml` (free for public repos). For a defensive library, "we run SAST" is table stakes for downstream due diligence.
+- [ ] **Add a 30-second "which API do I want?" decision tree** above the install command in README. Three APIs (assess / ContentProtector / assessAndProtect) is three things to learn; a 6-line decision block has disproportionate clarity payoff.
+
+### Next Sprint (1–4 weeks)
+
+- [ ] **Cross-browser Playwright smoke job in CI.** One `assess()` run against Chrome + Firefox + WebKit per PR. Today the detection logic is jsdom-verified only — a Chrome update can silently turn timing detectors into false negatives. This is the biggest single credibility / reliability gap.
+- [ ] **Write "Migrating from disable-devtool" guide** (carried over from the May 19 backlog; still the highest-leverage CMO action). Title for the search query: "Migrating from disable-devtool to a structured, OTel-native tamper detection library." Cross-post to Dev.to and r/javascript.
+- [ ] **Host the `demo/` SPA publicly** (Vercel / GitHub Pages / `shield.tindalabs.dev`) with a "copy as JSON" button on the output. Currently localhost-only — the most shareable asset Shield has is unreachable to prospects.
+- [ ] **Add bundle-size badge** to README + CI (`size-limit` or `bundlejs`). "Zero deps" sells; "X kB gzipped" closes.
+- [ ] **Add issue templates** (`.github/ISSUE_TEMPLATE/bug-report.md`, `false-positive.md`, `feature-request.md`) and `good-first-issue` label on signature-registry work — opens the contribution flywheel before community PRs land blindly.
+- [ ] **Add "Privacy & Data Handling" + explicit "What's NOT detected" README sections.** Shield runs entirely client-side and transmits nothing unless the consumer wires `spanEmitter` — saying so explicitly closes the GDPR-conscious user's first question.
+- [ ] **Enforce coverage threshold in CI** (`coverageThreshold: { global: { lines: 70 } }` in `jest.config.js`). Backstops the 78% baseline against regression without forcing it higher.
+- [ ] **Pin GitHub Actions versions to commit SHAs.** Dependabot already keeps these fresh; SHA-pinning (`actions/checkout@<sha>` instead of `@v6`) closes the supply-chain window between major-version float releases.
+
+### Strategic (1–3 months)
+
+- [ ] **Coordinated Tindalabs stack launch** — Show HN + Product Hunt with blindspot + scent + shield as one narrative, not three. (Carried over from May 19; still the single highest-leverage strategic action.) Every other distribution recommendation amplifies after the first 100 strangers install Shield.
+- [ ] **OTel SIG demo + CNCF Slack thread + PR to `awesome-opentelemetry`.** This is the highest-conversion community for Shield's unique OTel-native wedge; no incumbent in the category is here yet.
+- [ ] **Community extension signature registry** (carried over from May 19; the contribution flywheel). Each PR-contributed signature increases library value uBlock-style.
+- [ ] **Resolve Tindalabs commercial intent.** Is the stack a portfolio play (CV / authority) or a future commercial entity? Either is defensible; ambiguity costs strategic clarity. If commercial, scope the SaaS layer (hosted policy editor / managed signature registry) — Shield itself stays MIT.
+- [ ] **Address bus factor.** Recruit one co-maintainer or publish a succession plan in SECURITY.md — materially de-risks the project for any downstream commercial customer.
+
+### Watch List additions — 2026-05-29
+
+- **Anti-detect arms race (Camoufox / Nodriver / Patchright).** Detection-side libraries co-evolve continuously with these; falling behind = silent false negatives. Monitor the 2026 anti-detect benchmarks as a leading indicator of which heuristics are still discriminating.
+- **`disable-devtool` activity.** If the incumbent resumes active development or adds structured output, Shield's wedge over it narrows. Last release as of this assessment: 10 months stale.
