@@ -12,10 +12,9 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      # id-token: write is required for npm provenance. The OIDC token from
-      # GitHub Actions is exchanged for an attestation that links the published
-      # tarball to this exact workflow run + commit SHA — closes the
-      # compromised-NPM-token → malicious-patch supply-chain scenario.
+      # id-token: write is required for BOTH npm Trusted Publishing (OIDC auth
+      # to npm — no NPM_TOKEN secret needed) AND npm provenance attestation
+      # (signed link between this workflow run + commit SHA → published tarball).
       id-token: write
     steps:
       - name: Checkout code
@@ -26,6 +25,10 @@ jobs:
         with:
           node-version: '20'
           registry-url: 'https://registry.npmjs.org'
+
+      # Trusted Publishing requires npm >= 11.5.1; Node 20 ships with npm 10.x.
+      - name: Upgrade npm for Trusted Publishing
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         run: npm ci
@@ -39,7 +42,9 @@ jobs:
       - name: Build
         run: npm run build
 
+      # No NODE_AUTH_TOKEN needed — Trusted Publishing exchanges the GitHub
+      # OIDC token for a short-lived npm publish token at publish time. The
+      # `--provenance` flag is implied under Trusted Publishing but kept
+      # explicit for readability.
       - name: Publish to npm
         run: npm publish --access public --provenance
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
