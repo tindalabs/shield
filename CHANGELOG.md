@@ -24,9 +24,13 @@ change lands; rolled up into the next release notes when it does.
 - `actions/setup-node` v4 → v6 (#3)
 - Dev-dependencies group: `eslint-config-prettier` 10.1.1 → 10.1.8, `prettier`, `ts-jest`, `typescript-eslint` patches (#4)
 - `@types/node` 22.13.10 → 25.9.1 (#8) — type-only, no runtime impact
+- `typescript-eslint` 8.60.0 → 8.60.1, `eslint-config-prettier` patch, `ts-jest` patch (#9)
+- `eslint` 9 → 10 (#12) — peer-deps cleared; `typescript-eslint` 8.60.1 now lists `eslint: '^8 || ^9 || ^10'`
+- `jest` 29 → 30 + `@types/jest` 29 → 30 + `jest-environment-jsdom` 29 → 30 (#13). Required a [test-side migration][jsdom-30-migration]: jsdom 30 made `window.top`/`parent`/`self`/`location` and `global.document`/`window` non-configurable. New `src/utils/windowFrame.ts` helper indirects frame-detection reads so tests can stub via `jest.unstable_mockModule` instead of fighting jsdom's lockdown. `ContentProtector.test.ts` moved to `@jest-environment node` to bypass the frozen DOM globals. No `dist/` API change.
 - `npm audit fix`: resolved 11 dev-only advisories (1 critical, 3 high, 4 moderate, 3 low). Zero runtime dependencies meant end-users were never exposed; this was hygiene for the dev/CI tree only.
 - Distribution polish: README badges (npm version, CI status, MIT, zero runtime deps), `.github/PULL_REQUEST_TEMPLATE.md`, `.github/dependabot.yml` (monthly npm + github-actions, minor/patch grouped).
 
+[jsdom-30-migration]: https://github.com/tindalabs/shield/commit/b7b87f7
 [54306c8]: https://github.com/tindalabs/shield/commit/54306c8
 [67a3e7c]: https://github.com/tindalabs/shield/commit/67a3e7c
 [584840a]: https://github.com/tindalabs/shield/commit/584840a
