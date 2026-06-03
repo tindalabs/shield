@@ -1,8 +1,17 @@
+/**
+ * @jest-environment node
+ *
+ * This suite stubs `document`, `window`, and `navigator` wholesale via
+ * `Object.defineProperty(global, ...)`. Under jsdom 30, those globals are
+ * non-configurable, which made the redefines throw. Running this file in the
+ * node environment leaves the slots empty so the synthetic mocks can occupy
+ * them cleanly.
+ */
 import { describe, it, expect, jest, beforeEach, afterEach } from "@jest/globals"
 import { ContentProtector } from "../../core/ContentProtector"
 import type { ProtectionStrategy } from "../../types"
 
-// Create a more complete mock for DOM APIs
+// Create mock for DOM APIs
 const createMockDocument = (): unknown => {
   const mockStyleElement: { setAttribute: jest.Mock; textContent: string; parentNode: { removeChild: jest.Mock } } = {
     setAttribute: jest.fn(),
@@ -141,6 +150,13 @@ Object.defineProperty(global, "navigator", {
 // Mock self and top for iframe detection
 global.self = global.window
 global.top = global.window
+
+// Node env doesn't expose DOM constructors; the source `instanceof HTMLElement`
+// check needs SOMETHING to evaluate against. A no-op class is enough — the
+// tests pass plain mock objects that won't match it, and the source falls
+// through to the string-selector / null branches.
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+;(global as any).HTMLElement = class HTMLElement {}
 
 // Mock performance.now() for DevTools detection
 global.performance = {
