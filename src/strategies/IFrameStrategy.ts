@@ -1,6 +1,7 @@
 import type { FrameEmbeddingOptions, CustomEventHandlers } from "../types"
 import { isBrowser } from "../utils/environment"
 import { intervalManager } from "../utils/intervalManager"
+import { isEmbedded as checkEmbedded, readParentOrigin } from "../utils/windowFrame"
 import { AbstractStrategy, StrategyErrorType } from "./AbstractStrategy"
 import { ProtectionEventType } from "../core/mediator/protection-event"
 
@@ -63,31 +64,24 @@ export class FrameEmbeddingProtectionStrategy extends AbstractStrategy {
       this.safeExecute("checkIfEmbedded", StrategyErrorType.APPLICATION, () => {
         if (!isBrowser()) return false
 
-        // Check if the page is in an iframe
-        this.isEmbedded = window.self !== window.top
+        this.isEmbedded = checkEmbedded()
 
         if (this.isEmbedded) {
-          // Check if it's an external iframe (cross-origin)
-          try {
-            // If we can access parent.location.hostname, it's same-origin
-            const parentHostname = window.parent.location.hostname
-            const currentHostname = window.location.hostname
-            this.parentDomain = parentHostname
-
-            this.isExternalFrame = parentHostname !== currentHostname
-
-            // Check if the parent domain is in the allowed domains list
-            if (this.isExternalFrame && this.options.allowedDomains && this.options.allowedDomains.length > 0) {
-              this.isExternalFrame = !this.options.allowedDomains.includes(parentHostname)
-            }
-
-            this.log(`Embedded in iframe. Parent: ${parentHostname}, Current: ${currentHostname}`)
-            // eslint-disable-next-line @typescript-eslint/no-unused-vars
-          } catch (e) {
-            // If we can't access parent.location, it's definitely cross-origin
+          const { parentHostname, crossOrigin } = readParentOrigin()
+          if (crossOrigin) {
             this.isExternalFrame = true
             this.parentDomain = null
             this.log("Embedded in cross-origin iframe (security exception)")
+          } else {
+            const currentHostname = window.location.hostname
+            this.parentDomain = parentHostname
+            this.isExternalFrame = parentHostname !== currentHostname
+
+            if (this.isExternalFrame && this.options.allowedDomains && this.options.allowedDomains.length > 0) {
+              this.isExternalFrame = !this.options.allowedDomains.includes(parentHostname!)
+            }
+
+            this.log(`Embedded in iframe. Parent: ${parentHostname}, Current: ${currentHostname}`)
           }
 
           // If blockAllFrames is true, treat all frames as external

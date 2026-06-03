@@ -1,5 +1,6 @@
 import { isBrowser, getBrowser } from "../environment"
 import { eventManager } from "../eventManager"
+import { isEmbedded } from "../windowFrame"
 import { AbstractDevToolsDetector, DetectorErrorType } from "./AbstractDevToolsDetector"
 import { DevToolsDetectorOptions } from "./detectorInterface"
 
@@ -177,7 +178,7 @@ export class SizeDetector extends AbstractDevToolsDetector {
     if (!isBrowser()) return false
 
     const browser = getBrowser()
-    const isIframe = window.self !== window.top
+    const isIframe = isEmbedded()
 
     // Not supported in iframes or Edge
     if (isIframe || browser.name === "edge") {

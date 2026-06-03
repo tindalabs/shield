@@ -1,4 +1,5 @@
 import { isBrowser } from './utils/environment.js';
+import { isEmbedded } from './utils/windowFrame.js';
 import { DevToolsDetectorManager } from './utils/detectors/devToolsDetectorManager.js';
 import type { AssessOptions, ShieldAssessment, ShieldSignals } from './types/assessment.js';
 import type { ExtensionConfig } from './types/index.js';
@@ -209,7 +210,7 @@ export async function assess(options: AssessOptions = {}): Promise<ShieldAssessm
 
   const webdriver = Boolean(navigator.webdriver);
   const headless = detectHeadless();
-  const frameEmbedded = (() => { try { return window.self !== window.top; } catch { return true; } })();
+  const frameEmbedded = isEmbedded();
 
   const signals: ShieldSignals = {
     'shield.devtools.open': devtoolsOpen,

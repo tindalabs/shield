@@ -1,13 +1,15 @@
-import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals'
-import { FrameEmbeddingProtectionStrategy } from '../../strategies/IFrameStrategy'
+import { describe, it, expect, jest, beforeEach, beforeAll, afterEach } from '@jest/globals'
 import { ProtectionEventType } from '../../core/mediator/protection-event'
 import type { FrameEmbeddingOptions } from '../../types'
 import type { ProtectionMediator } from '../../core/mediator/types'
 import type { FrameEmbeddingEvent } from '../../core/mediator/protection-event'
+import type { FrameEmbeddingProtectionStrategy as FrameEmbeddingProtectionStrategyType } from '../../strategies/IFrameStrategy'
 
-// The intervalManager is a module-level singleton. Without mocking it, its
-// 500ms base interval fires between tests and causes cross-test contamination.
-jest.mock('../../utils/intervalManager', () => ({
+// ESM mode: jest.mock() does NOT hoist — must use jest.unstable_mockModule
+// and dynamic imports. windowFrame is mocked because jsdom 30 makes
+// `window.top` non-configurable, so we route frame detection through the
+// helper module and stub it here rather than fighting jsdom's lockdown.
+jest.unstable_mockModule('../../utils/intervalManager', () => ({
   intervalManager: {
     registerTask: jest.fn().mockReturnValue('iframe-task-id'),
     unregisterTask: jest.fn(),
@@ -16,15 +18,32 @@ jest.mock('../../utils/intervalManager', () => ({
   },
 }))
 
+jest.unstable_mockModule('../../utils/windowFrame', () => ({
+  isEmbedded: jest.fn(() => false),
+  readParentOrigin: jest.fn(() => ({ parentHostname: 'example.com', crossOrigin: false })),
+}))
+
+let FrameEmbeddingProtectionStrategy: typeof FrameEmbeddingProtectionStrategyType
+let isEmbeddedMock: jest.Mock<() => boolean>
+let readParentOriginMock: jest.Mock<() => { parentHostname: string | null; crossOrigin: boolean }>
+
+beforeAll(async () => {
+  const strategyMod = await import('../../strategies/IFrameStrategy')
+  FrameEmbeddingProtectionStrategy = strategyMod.FrameEmbeddingProtectionStrategy
+  const wfMod = await import('../../utils/windowFrame')
+  isEmbeddedMock = wfMod.isEmbedded as unknown as jest.Mock<() => boolean>
+  readParentOriginMock = wfMod.readParentOrigin as unknown as jest.Mock<() => { parentHostname: string | null; crossOrigin: boolean }>
+})
+
 describe('FrameEmbeddingProtectionStrategy', () => {
   beforeEach(() => {
-    // Reset window to a same-origin, non-framed state before each test.
-    // Use getter form — value-based defineProperty for window.parent does not
-    // reliably restore after jsdom converts it to a plain value descriptor.
     jest.useFakeTimers()
-    Object.defineProperty(window, 'top', { get: () => window, configurable: true })
-    Object.defineProperty(window, 'parent', { get: () => window, configurable: true })
-    Object.defineProperty(window, 'self', { get: () => window, configurable: true })
+    isEmbeddedMock.mockReturnValue(false)
+    readParentOriginMock.mockReturnValue({ parentHostname: 'localhost', crossOrigin: false })
+    // jsdom 30 makes `window.location` non-configurable AND attempts to navigate
+    // on hostname assignment, so we can't override the current-page hostname.
+    // Tests use parent hostnames that differ from jsdom's default 'localhost'
+    // to exercise the external-frame branch.
   })
 
   afterEach(() => {
@@ -41,13 +60,8 @@ describe('FrameEmbeddingProtectionStrategy', () => {
       setDebugMode: jest.fn(),
     }
 
-    type FakeWindowLike = { location: { hostname: string } }
-    const fakeParent: FakeWindowLike = { location: { hostname: 'evil.com' } }
-    const fakeTop: FakeWindowLike = { location: { hostname: 'evil.com' } }
-
-    Object.defineProperty(window, 'top', { value: fakeTop as unknown as Window, configurable: true })
-    Object.defineProperty(window, 'parent', { value: fakeParent as unknown as Window, configurable: true })
-    Object.defineProperty(window, 'location', { value: { hostname: 'example.com' }, configurable: true })
+    isEmbeddedMock.mockReturnValue(true)
+    readParentOriginMock.mockReturnValue({ parentHostname: 'evil.com', crossOrigin: false })
 
     const strategy = new FrameEmbeddingProtectionStrategy({ showOverlay: true, allowedDomains: [] } as FrameEmbeddingOptions, document.body, undefined, false)
     strategy.setMediator(mediator)
@@ -72,11 +86,8 @@ describe('FrameEmbeddingProtectionStrategy', () => {
       setDebugMode: jest.fn(),
     }
 
-    type FakeWindowLike = { location: { hostname: string } }
-    const fakeParent: FakeWindowLike = { location: { hostname: 'allowed.com' } }
-    Object.defineProperty(window, 'top', { value: fakeParent as unknown as Window, configurable: true })
-    Object.defineProperty(window, 'parent', { value: fakeParent as unknown as Window, configurable: true })
-    Object.defineProperty(window, 'location', { value: { hostname: 'example.com' }, configurable: true })
+    isEmbeddedMock.mockReturnValue(true)
+    readParentOriginMock.mockReturnValue({ parentHostname: 'allowed.com', crossOrigin: false })
 
     const strategy = new FrameEmbeddingProtectionStrategy({ allowedDomains: ['allowed.com'] } as FrameEmbeddingOptions, document.body, undefined, false)
     strategy.setMediator(mediator)
@@ -97,13 +108,8 @@ describe('FrameEmbeddingProtectionStrategy', () => {
       setDebugMode: jest.fn(),
     }
 
-    // window.parent.location throws → cross-origin path; window.top !== window
-    // simulated via separate object.
-    const throwingParent = {
-      get location() { throw new Error('cross-origin') },
-    } as unknown as Window
-    Object.defineProperty(window, 'top', { value: {} as Window, configurable: true })
-    Object.defineProperty(window, 'parent', { value: throwingParent, configurable: true })
+    isEmbeddedMock.mockReturnValue(true)
+    readParentOriginMock.mockReturnValue({ parentHostname: null, crossOrigin: true })
 
     const strategy = new FrameEmbeddingProtectionStrategy(
       { allowedDomains: [] } as FrameEmbeddingOptions,
@@ -130,11 +136,10 @@ describe('FrameEmbeddingProtectionStrategy', () => {
       setDebugMode: jest.fn(),
     }
 
-    type FakeWindowLike = { location: { hostname: string } }
-    const sameOriginParent: FakeWindowLike = { location: { hostname: 'example.com' } }
-    Object.defineProperty(window, 'top', { value: sameOriginParent as unknown as Window, configurable: true })
-    Object.defineProperty(window, 'parent', { value: sameOriginParent as unknown as Window, configurable: true })
-    Object.defineProperty(window, 'location', { value: { hostname: 'example.com' }, configurable: true })
+    isEmbeddedMock.mockReturnValue(true)
+    // Same-origin parent (matches jsdom's default 'localhost'): blockAllFrames
+    // should still flag it as external.
+    readParentOriginMock.mockReturnValue({ parentHostname: 'localhost', crossOrigin: false })
 
     const strategy = new FrameEmbeddingProtectionStrategy(
       { blockAllFrames: true, allowedDomains: [] } as FrameEmbeddingOptions,
@@ -200,11 +205,8 @@ describe('FrameEmbeddingProtectionStrategy', () => {
         setDebugMode: jest.fn(),
       }
 
-      type FakeWindowLike = { location: { hostname: string } }
-      const fakeParent: FakeWindowLike = { location: { hostname: 'evil.com' } }
-      Object.defineProperty(window, 'top', { value: fakeParent as unknown as Window, configurable: true })
-      Object.defineProperty(window, 'parent', { value: fakeParent as unknown as Window, configurable: true })
-      Object.defineProperty(window, 'location', { value: { hostname: 'example.com' }, configurable: true })
+      isEmbeddedMock.mockReturnValue(true)
+      readParentOriginMock.mockReturnValue({ parentHostname: 'evil.com', crossOrigin: false })
 
       const strategy = new FrameEmbeddingProtectionStrategy(
         { allowedDomains: [], blockAllFrames: false } as FrameEmbeddingOptions,
