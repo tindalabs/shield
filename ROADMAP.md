@@ -218,10 +218,10 @@ The cross-cutting finding: the product is built, distribution is the bottleneck,
 
 ### Immediate (this week)
 
-- [ ] **Verify v0.1.0 is live on npm.** Confirm `npm install @tindalabs/shield` resolves and `npm view @tindalabs/shield version` returns `0.1.0`. Until this is true, every marketing claim is unverifiable.
-- [ ] **Enable npm publish provenance + 2FA on the publishing account.** Pass `--provenance` in `publish.yml` (or rely on the workflow's default if already set) and turn on `auth-and-writes` 2FA in npm. Closes the worst-case supply-chain scenario (compromised npm credentials → malicious patch in every consumer browser).
-- [ ] **Cut a real `[0.1.0]` CHANGELOG section.** `CHANGELOG.md` currently has only `[Unreleased]`; the tag is invisible to changelog readers. Capture: policy engine (`assessAndProtect`), OTel emission (`attachShieldToSpan`), ClipboardStrategy integration, `LoggableComponent` consolidation, zero runtime deps.
-- [ ] **Add CodeQL workflow** at `.github/workflows/codeql.yml` (free for public repos). For a defensive library, "we run SAST" is table stakes for downstream due diligence.
+- [x] ~~**Verify v0.1.0 is live on npm.**~~ ✅ Confirmed: `npm view @tindalabs/shield version` returns `0.1.0`; tarball resolves at `registry.npmjs.org/@tindalabs/shield/-/shield-0.1.0.tgz`.
+- [~] **Enable npm publish provenance + 2FA on the publishing account.** `--provenance` flag + `id-token: write` permission added to `publish.yml`; next `v*` tag push will produce a signed attestation visible on npmjs.com. **Manual follow-up:** enable `auth-and-writes` 2FA on the publishing account at https://www.npmjs.com/settings/~/profile (account-level; not automatable via PR).
+- [x] ~~**Cut a real `[0.1.0]` CHANGELOG section.**~~ ✅ Done in commit `d447a04` — `[Unreleased]` rotated into `[0.1.0] - 2026-05-29` capturing `assess()`, `attachShieldToSpan()`, `assessAndProtect()`, `ContentProtector`, `ClipboardStrategy` integration, CI/publish workflows, and the jest-environment-jsdom dependency relocation.
+- [x] ~~**Add CodeQL workflow**~~ ✅ Added at `.github/workflows/codeql.yml` — runs `javascript-typescript` analysis with the `security-and-quality` query pack on every push to `main`, every PR, and weekly on Monday 06:00 UTC. Findings surface in the repo's Security tab.
 - [ ] **Add a 30-second "which API do I want?" decision tree** above the install command in README. Three APIs (assess / ContentProtector / assessAndProtect) is three things to learn; a 6-line decision block has disproportionate clarity payoff.
 
 ### Next Sprint (1–4 weeks)
