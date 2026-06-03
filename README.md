@@ -19,6 +19,20 @@ npm install @tindalabs/shield
 
 ---
 
+## Which API do I want?
+
+Shield ships three top-level APIs. Pick by what you want to do with the result:
+
+| Goal | API | What it does |
+|---|---|---|
+| **Observe / score** the session — log signals, gate a feature, feed a risk model | [`assess()`](#quick-start--assess) | Detects DevTools / automation / extensions / frame embedding. Returns structured signals + `risk.score` (0–1) + OTel span attributes. No side effects. |
+| **Block** copy / print / screenshots / clipboard / keyboard shortcuts on an element | [`ContentProtector`](#active-protection--contentprotector) | Manual control: pass an element + options, get an instance with `dispose()`. Always-on for everyone who hits the page. |
+| **Both** — observe first, then activate protections *only* when the session warrants it | [`assessAndProtect()`](#risk-gated-protection--assessandprotect) | Runs `assess()`, evaluates a declarative `PolicyRule[]` (e.g. "watermark when riskScore ≥ 0.3"), activates the matching strategies. Legitimate users see no overhead. |
+
+For OTel-instrumented protection (every block / detection becomes a span event), wrap any of the above with [`attachShieldToSpan()`](#otel-instrumented-protection--attachshieldtospan).
+
+---
+
 ## Quick start — `assess()`
 
 The primary API is a single async call that returns structured signals, a risk summary, and OTel-compatible span attributes:
