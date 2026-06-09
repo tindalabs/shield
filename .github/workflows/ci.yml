@@ -30,3 +30,75 @@ jobs:
 
       - name: Build
         run: npm run build
+
+  # Cross-browser smoke verification of assess() in real engines. The unit
+  # suite is jsdom-only (no Worker → the DevTools debugger detector never runs);
+  # this proves the detection pipeline survives in Chromium and Firefox.
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install Playwright browsers
+        working-directory: e2e
+        run: npx playwright install --with-deps chromium firefox
+
+      - name: Run cross-browser smoke (Chromium + Firefox)
+        working-directory: e2e
+        run: npm test
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-linux
+          path: e2e/playwright-report
+          retention-days: 7
+
+  # WebKit (Safari engine) cannot run under Playwright on Linux, so it is
+  # verified on a macOS runner — the engine where timing-based DevTools
+  # heuristics diverge most.
+  e2e-webkit:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+          cache-dependency-path: e2e/package-lock.json
+
+      - name: Install e2e dependencies
+        working-directory: e2e
+        run: npm ci
+
+      - name: Install WebKit
+        working-directory: e2e
+        run: npx playwright install --with-deps webkit
+
+      - name: Run cross-browser smoke (WebKit)
+        working-directory: e2e
+        run: npx playwright test --project=webkit
+
+      - name: Upload report on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-webkit
+          path: e2e/playwright-report
+          retention-days: 7
