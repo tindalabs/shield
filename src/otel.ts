@@ -1,5 +1,5 @@
-import { ContentProtector } from '@/core/index.js';
-import type { ContentProtectionOptions, CustomEventHandlers } from '@/types/index.js';
+import { ContentProtector } from './core/index.js';
+import type { ContentProtectionOptions, CustomEventHandlers } from './types/index.js';
 
 /**
  * A function that records one Shield security event as an immediately-ending

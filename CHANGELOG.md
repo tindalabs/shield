@@ -6,9 +6,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-These changes don't ship in `dist/` — they affect the dev tree, CI infra, and
-internal architecture only. No version bump warranted until a consumer-visible
-change lands; rolled up into the next release notes when it does.
+A consumer-visible fix now lands (see **Fixed** below), so the next release
+should be a patch (`0.1.1`). The Changed/Internal/Chore items — which only
+affect the dev tree, CI, and internal architecture — roll up into it.
+
+### Fixed
+- **Self-referential `@/` import leaked into published `dist/`.** `dist/otel.js`
+  imported `@/core/index.js` (and `@/types/index.js`) — shield's internal
+  TypeScript path alias, which `tsc` does **not** rewrite to a relative path on
+  emit. This broke `attachShieldToSpan` for any consumer bundling shield without
+  replicating the alias (Webpack/Next, Vite, etc.): `Module not found: Can't
+  resolve '@/core/index.js'`. `src/otel.ts` (the only file that used the alias)
+  now imports relatively, so `dist/` is alias-free. Surfaced while wiring shield
+  into the tindalabs.dev static build.
 
 ### Changed
 - **`engines.node` pinned to `>=20.0.0`** in `package.json`. Matches what CI tests against; pre-empts the `EBADENGINE` warning that dev-dep updates have started emitting on Node 18 and below. Mild consumer-facing change (npm warns at install time on older Node) — wouldn't justify a version bump on its own, but worth flagging in the next release notes.

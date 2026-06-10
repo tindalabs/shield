@@ -1,0 +1,18 @@
+{
+  "name": "@tindalabs/shield-e2e",
+  "private": true,
+  "description": "Cross-browser (Chromium / Firefox / WebKit) smoke verification of assess() in a real engine.",
+  "scripts": {
+    "build:fixture": "vite build",
+    "serve:fixture": "node serve.mjs",
+    "test": "playwright test",
+    "test:report": "playwright show-report",
+    "install-browsers": "playwright install --with-deps chromium firefox webkit"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.50.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.8.2",
+    "vite": "^6.2.0"
+  }
+}
