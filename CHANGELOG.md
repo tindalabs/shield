@@ -6,9 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [Unreleased]
 
-A consumer-visible fix now lands (see **Fixed** below), so the next release
-should be a patch (`0.1.1`). The Changed/Internal/Chore items — which only
-affect the dev tree, CI, and internal architecture — roll up into it.
+## [0.1.1] - 2026-06-10
+
+First patch release. The one consumer-visible change is the published-`dist`
+`@/` import leak (see **Fixed**); the Changed/Internal/Chore items only affect
+the dev tree, CI, and internal architecture, and roll up into this patch.
 
 ### Fixed
 - **Self-referential `@/` import leaked into published `dist/`.** `dist/otel.js`
@@ -28,6 +30,7 @@ affect the dev tree, CI, and internal architecture — roll up into it.
 - **Pruned aspirational `ProtectionEventType` enum** ([af9f270]): dropped 19 unused event types and matching `EventDataMap` entries that nothing publishes. Enum is now 10 entries — exactly what flows through the mediator today. Header doc explains the detect-and-react vs direct-blocking architectural asymmetry.
 - **Test coverage uplift**: 40.42% → 78.18% line coverage; 58 → 372 tests across 10 incremental slices. Two real bugs surfaced and fixed along the way: `SecurityOverlayManager` overlay re-queue ([4d14467]) and `ProtectedContentManager` priority-supersession orphan ([5d5a607]).
 - **Bonus README section**: `attachShieldToSpan()` promoted to its own top-level section after `ContentProtector`, with quick-start, Blindspot integration, and full table of emitted span events.
+- **CodeQL note alerts cleared** (#18): added a missing semicolon in `DOMObserver` (`js/automatic-semicolon-insertion`) and dropped an unused `const value` binding in `defineGetterDetector` in favor of `void ...testProp` to keep the getter-triggering access as a pure side effect (`js/unused-local-variable`). No behavior change. The high-severity `js/path-injection` alert on the `e2e/serve.mjs` test fixture was triaged and dismissed as a false positive (127.0.0.1-only fixture, traversal already guarded via `normalize` + `startsWith` containment).
 
 ### Chore
 - `actions/checkout` v4 → v6 (#2)
