@@ -103,7 +103,7 @@ export class DomObserver {
                     if (child instanceof HTMLElement) {
                       addedElements.push(child);
                     }
-                  })
+                  });
                 }
 
                 if (this.options.debugMode) {

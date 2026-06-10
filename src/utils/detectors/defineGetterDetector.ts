@@ -169,9 +169,8 @@ export class DefineGetterDetector extends AbstractDevToolsDetector {
         configurable: true,
       })
 
-      // Access the property to see if the getter works
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      const value = (testDiv as unknown as { testProp: string }).testProp
+      // Access the property to trigger the getter (side effect only).
+      void (testDiv as unknown as { testProp: string }).testProp;
 
       return testValue
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
